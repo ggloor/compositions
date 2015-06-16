@@ -1,3 +1,11 @@
+# getting ALDEx2: http://www.microbiomejournal.com/content/2/1/15
+# you need an R environment installed already
+# http://cran.r-project.org
+#
+# inside of R
+# source("http://bioconductor.org/biocLite.R")
+# biocLite("ALDEx2")
+
 ##########
 # using the supplementary table from Hsio et al, 2013, Cell Microbiota Modulate Behavioral and Physiological Abnormalities Associated with Neurodevelopmental Disorders
 # this shows how I read the table and formatted it for ALDEx2
