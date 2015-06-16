@@ -1,0 +1,660 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   % ... or a4paper or a5paper or ... 
+%\geometry{landscape}                % Activate for for rotated page geometry
+\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+
+%set the bibliography style
+\usepackage[super,sort&compress,comma]{natbib}
+%\bibliographystyle{natbib}
+\bibliographystyle{unsrt}
+\renewcommand\bibnumfmt[1]{\emph{\textbf{\small{#1)}}}}
+\setlength\bibsep{2pt}
+
+% \VignetteIndexEntry{An R Package for determining differential abundance in high throughput sequencing experiments}
+
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\usepackage{wrapfig}
+\usepackage[margin=1in,font=small,labelfont=bf,
+               labelsep=colon]{caption}
+
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+
+
+\title{Why many high throughput sequencing experiments are irreproducible: an example from 16S rRNA gene sequencing.}
+\author{Greg Gloor, ggloor@uwo.ca\\CSM Workshop: 2015}
+\date{\today}                                           % Activate to display a given date or no date
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+%\listoffigures
+%\listoftables
+\section{Abstract}
+Fundamentally, many high throughput sequencing approaches generate similar data: samples contain many different features, the count  of reads-per-feature is tabulated for each sample, these counts are normalized, and finally the samples in each group are compared in some way.  The standard statistical tools used to analyze RNA-seq, ChIP-seq, 16S rRNA gene sequencing, metagenomics, etc. are fundamentally different for each approach  despite the underlying similarity in the data because the methods were developed in isolation for each experimental design, and often do not take into account the multivariate nature of the data. Here we show, using an example from 16S rRNA gene sequencing, that the approaches taken towards the analysis of these datasets suffers from several common pitfalls and that  widely used tools that treat the data as point estimates of the counts can lead to very misleading inferences.
+
+\section{Introduction}
+The human microbiome project has initiated the large-scale culture-independent analysis of microbial communities. However, many studies fail to replicate earlier studies even when the same technologies and strategies are used. For example, a multitude of studies have examined the link between autism and the human gut microbiota. These have variously implicated x,y,...,and z microbe as being linked to the condition. In a recent high-profile paper\cite{Hsiao:2013}, \emph{Bacillus fragilis} was suggested to restore some taxonomic groups to the gut microbiome of a mouse autism model. However, examination of the dataset shows that the conclusion was likely due to chance alone. While the autism dataset serves as a facile example, the literature are replete with other examples. 
+
+All 16S rRNA gene sequencing datasets share a common origin. A microbial population is sampled, and DNA is isolated. One or more rRNA gene variable regions are PCR amplified using primers specific for the flanking constant regions. An aliquot of the resulting mixture of DNA fragments are then on a particular platform, generating hundreds of thousands to hundreds of millions of sequences that represent random samples of the PCR-amplified mixture. 
+
+It is important to remember that the number of sequences obtained after sequencing contains no information about the \emph{number} of sequences in the PCR amplified pool, nor does it contain information about the \emph{number}  of molecules in the original DNA sample that was amplified. Instead the only information available is the \emph{relative} proportion of individual sequences in the PCR amplified mixture, which is assumed to approximate the proportion of sequences in the input DNA sample. Furthermore, the number of sequences obtained for a particular sample is determined entirely by the capacity of the sequencing platform. Thus, the outputs of the sequencing event are reads per operational taxonomic unit (OTU) per sample. The values across samples are often normalized by subsampling (rarefaction) or by converting to proportions or percentages; these latter values are widely spoken of in the literature as `relative abundances'. Subsampling is frequently used to estimate the associated sampling error. Some groups have begun advocating the use of  normalization methods prevalent in the RNA-seq field\cite{McMurdie:2014a}, but still treat the data as point estimates of the true abundance. There are three main data analysis issues that must be acknowledged. 
+
+First, the nature of these data are misunderstood. As outlined above, the number of counts observed  per OTU are determined entirely by the capacity of the instrument and provide no information about the number of molecules in the input sample. Recall that both bacterial growth, and PCR are doubling processes and not linear processes, and so would be better modelled as log$_2$ differences.
+
+Understanding that we are dealing with fold-change data is an explicit acknowledgement that the data do not map to normal Euclidian space where differences are linear.  Commonly used statistical tests expect linear differences between values and so are compromised to some degree, often catastrophically\cite{Aitchison:1986,vandenBoogaart2008320}. Therefore, the often-used approaches of converting the OTU count values to proportions or percentages and conducting statistical tests on those values, or of using data reduction strategies such as Principle Component Analysis on the  values are inappropriate because the differences between values are not linear. An alternative approach is to convert the OTU counts to ratios\cite{Aitchison:1986,aitchison:2005,Pawlowsky-Glahn:2006,pawlowsky2011compositional} which makes the differences between values linear, and so allows the use of common statistical tests. 
+%However the user must interpret the output as ratios between OTU abundances rather than absolute differences\cite{pawlowsky2011compositional}. This approach is described below.
+
+Second, high throughput sequencing (HTS) data represent samples of an unknown underlying large number of molecules. Thus, there is a large and unappreciated  error of estimation that is problematic when dealing with these data\cite{fernandes:2013}. The high error of estimation often results in false positive identification of differences, in fact, the statistical result can often be explained entirely by sampling variation.  This error is not captured by rarefaction or even acknowledged by other normalization methods and should be estimated and accounted for when deciding what is a significant difference. 
+
+Third, 16S rRNA gene sequencing surveys, and similar experiments, contain many variables in each sample. Thus, any analysis that attempts to characterize the individual differences between groups must correct for the many hypotheses that are being tested. This step is often ignored, even in work published in very high profile journals subject to rigorous peer review. 
+
+The purpose of these notes is to show  why HTS data for 16S rRNA gene sequencing, and any similar experiments such as RNA-seq, should be treated as ratio data and that it is possible to do so simply. We show that this approach accurately recapitulates the shape of the data for both constrained and unconstrained datasets. We show that converting the data to ratios can accurately model the very high variability at the low count margins, and that rarefaction under-estimates this variability. We use an example from the literature to show how ignoring these factors leads to improper conclusions.
+
+\section{Results and Discussion}
+\subsection{Sequencing technologies  randomly sample a pool of input DNA.} 
+
+When generating a high throughput sequencing datseta it is important to understand the source of the data. In the case of 16S rRNA gene sequencing surveys, DNA is isolated and subsequently amplified using primers specific for constant regions that flank one or more 16S rRNA gene variable regions. A portion of the amplified DNA is then taken and used to generate a library, and only a portion of the library is sequenced. This workflow can be thought of as three random samples from an urn containing a random assortment of molecules. The first random sample is the sample from the environment itself that is used to make the DNA: what is swabbed, and how much is collected relative to the environment. Depending on the environment, this can be a large and complete sample or a small, incomplete and unrepresentative sample. The second random sample is the DNA molecules that are input into the initial PCR reaction. Here, the number of molecules available depends on the initial concentration of the DNA and the mean genome size of the organisms composing the sample. The third random sample comprise the DNA molecules from the library that are actually sequenced on the machine. 
+
+As an example, if the mean genome size is 4 Mb, then 1 ng of DNA would provide approximately $1\times 10^6$ amplification templates if we assume 3-4 rRNA loci per genome. These templates would be amplified up to $2^{25}$ fold by PCR amplification, but only between $1 \times 10^6$ and $2 \times 10^8$ sequences are generated on the machine. These are apportioned across dozens or hundreds of samples giving typically 10000 - 100000 reads per sample. 
+
+In the case of RNA-seq, the first random sample is the sample from the environment, the second is the mRNA placed into the cDNA reaction, the third random sample is the fraction of the cDNA that is used for the library.
+
+\begin{figure}
+\begin{center}
+
+<<p_val, echo=FALSE, fig.height=5, fig.width=5>>=
+# generate an empty matrix containing n rows, and 10,00 columns
+n <- 1000
+var <- 1000
+x <- matrix(data=NA, nrow=n, ncol=var)
+p <- matrix(data=NA, nrow=10, ncol=var) 
+for(j in 1:10){
+	# fill it with independent random (pseudo) numbers
+	for(i in 1:n){ x[i,] <- sample(1:1000,var) }
+	
+	# un-comment this to show what happens when one variable is truly different
+	# also try BH, bonferroni
+	#x[1:(n/2),1:10] <-  x[1:(n/2),1:10] * 2
+
+	# calculate p values
+	p[j,] <- apply(x, 2, function(z){as.numeric(t.test(z[1:(n/2)], z[(n/2 + 1):n])[3])})
+}	
+mean.p <- apply(p, 2, mean)
+p.adj <- apply(p, 1, function(n){p.adjust(n, method="BH")})
+mean.p.adj <- apply(p.adj, 1, mean)
+# plot a histogram
+
+
+par(mfrow=c(2,2))
+ hist(p[1,], breaks=1000, main="raw p", xlab="p")
+ abline(v=0.05, col="red")
+ hist(p.adj, breaks=1000, xlim=c(0,1), main="BH adj")
+ abline(v=0.1, col="red")
+ hist(mean.p, breaks=1000, xlim=c(0,1), main="mean raw p")
+ abline(v=0.1, col="red")
+hist(mean.p.adj, breaks=1000, xlim=c(0,1), main="mean BH adj")
+  abline(v=0.1, col="red")
+# count the number that have a p value less than 0.05
+# length(which(p < 0.05))
+# length(which(p.adj < 0.1))
+
+@
+\caption{P values represent the "probability of finding the observed sample results, or "more extreme" results, when the null hypothesis is actually true". In other words, a p-value is the probability of seeing a difference between groups when that difference is actually due to chance. The upper left panel in the figure shows the distribution of p values for a simulated experiment where there are 500 samples in group A and 500 samples in group B and 1000 variables in each sample. The upper right panel shows the Benjamini-Hochberg corrected p-values for the same experiment. The bottom left panel shows the mean p and mean BH corrected value of 10 replicates of the upper panels.  }
+\label{pval}
+\end{center}
+\end{figure}
+
+\subsection{Data are multivariate and, as a minimum, must be corrected for multiple hypothesis tests.}~ A p value is the likelihood of observing the result, or one more extreme, by chance alone. The commonly used cutoff of 0.05 means that we are almost certain to observe many false positive results when the samples contain many variables. Figure \ref{pval} shows an example. Here, I have chosen 1000 random numbers for each of 1000 samples. Then, I split the samples, arbitrarily, into two groups. Finally, I conducted an unpaired Welch's t-test on each of the 1000 variables in the two groups of 500 samples. The upper left panel shows a histogram of the results: p$<= 0.05$ for approximately 50 of the 1000 variables. These are shown as the p values to the left of the red line. You should be very wary of anyone who shows multivariate data, and then makes conclusions from raw p values. 
+
+One commonly used approach is to correct your p values for multiple hypothesis tests using one of the many corrections. The Benjamin-Hochberg procedure is widely used, and corrects the raw p values such that the likelihood of observing a given corrected value is the adjusted value. This is called a False Discovery Rate correction. For example, if the p value is 0.001, and the BH corrected p value is 0.1, then the likelihood that the difference is observed by chance is 10\%. Thus, if you have 100 variables that have a BH value less than 0.1, you expect that 10 of them will be false positives - you just don't know which ones. The alternative is a Family Wide Error Rate correction, the most famous of which is the Bonferroni correction. In this case the value reported is the likelihood that any of the values reported are wrong. So if 100 values are reported using a FWER cutoff of 0.1, then the likelihood that any of them are wrong is 10\%.
+
+Another approach is to determine if the p values are stable to sampling variation. This approach is shown in the lower two panels of Figure \ref{pval}. The bottom left shows the mean p values for 10 random replicates of the data in the top left panel. Here we see that the mean p value is approximately 0.5 because the expected p value for a randomly chosen comparison is 0.5. Note that the mean BH adjusted p values approach 1.
+
+%As an example if the mean genome size is 4 Mb, a mole of genomes would have a mass of $2.64 \times 10^9$ grams. If the DNA concentration after isolation is 1 ng$/ \mu$l, and one $\mu$l of DNA is used for the amplification, this corresponds to ($1\times 10^{-9} \mathrm{\ g}) / (2.64 \times 10^9\ \mathrm{g/mole})  \times (6.02 \times 10^{23} \mathrm{\ genomes/mole}) = 228,000$ genomes. Each genome further has 3-4 rRNA gene loci, providing approximately $1\times 10^6$ amplification templates. Thus, if there are 10 $\mu$l of DNA isolated at 1 ng/$\mu$l, we are sampling 10\% of the input and different samples will give us compositions that differ slightly. Depending on the platform between $1 \times 10^6$ and $2 \times 10^8$ sequences are generated, but these are apportioned across dozens or hundreds of samples giving typically 10000 - 100000 reads per sample.  
+
+%These rRNA genes in these genomes are exponentially amplified by the PCR, to a typical concentration of $> 10^{11}$ molecules per $\mu$l (assuming a length of 250 bp, and a final concentration of approximately 100 ng/ $\mu$l). 
+
+\subsection{Sequencing can change the shape of the data:}
+
+\begin{figure}
+\begin{center}
+
+<<constrained_data,echo=FALSE,fig.width=6.5,fig.height=5>>=
+
+#RAW DATA ON MBQC DISK
+#Original script at: "/Users/ggloor/Documents/0_techrep_blog/analysis_joint
+
+
+rdirichlet <- function (n, alpha)
+{
+  if(length(n) > 1) n <- length(n)
+  #if(length(n) == 0 || as.integer(n) == 0) return(numeric(0))
+  #n <- as.integer(n)
+  if(n < 0) stop("value(n) can not be negative in rtriang")
+  
+  if(is.vector(alpha)) alpha <- t(alpha)
+  l <- dim(alpha)[2]
+  x <- matrix(rgamma(l * n, t(alpha)), ncol = l, byrow=TRUE)  # Gere le recycling
+  return(x / rowSums(x))
+}
+
+num.one = 100 # the number of rare-counts in the dataset
+
+mat.double <- matrix(data=NA, nrow=20, ncol=num.one + 10)
+prop.mat <- matrix(data=NA, nrow=20, ncol=num.one + 10)
+clr.mat <- matrix(data=NA, nrow=20, ncol=num.one + 10)
+
+mat.double.u <- matrix(data=NA, nrow=20, ncol=num.one + 10)
+prop.mat.u <- matrix(data=NA, nrow=20, ncol=num.one + 10)
+clr.mat.u <- matrix(data=NA, nrow=20, ncol=num.one + 10)
+
+# constant sum input
+minimum.count <- 1 # multiplier to set minimum count for in.put
+# non-constant sum input with both one big increase
+in.put <- c(10,20971,1,1,5,10,20,50,100,200,1000) * minimum.count
+
+total.sum <- sum(in.put + 1) * 1000
+
+for(i in 0:19){
+	# constant sum input
+	junk <- in.put * c(2^i, rep(1,num.one + 9))
+	junk[3] <- total.sum - sum(junk)
+	mat.double[i+1,] <- junk
+	prop.mat[i+1,] <- as.numeric( rdirichlet(1, junk) )
+	clr.mat[i+1,] <- log2(prop.mat[i+1,]) - mean(log2(prop.mat[i+1,]))
+}
+
+for(i in 0:19){
+	# non-constant sum input
+	#junk <- in.put * c(2^i, rep(1,num.one + 9))
+	junk <- in.put * c(2^i, rep(1,num.one + 9))
+	mat.double.u[i+1,] <- junk
+	prop.mat.u[i+1,] <- as.numeric( rdirichlet(1, junk) )
+	clr.mat.u[i+1,] <- 2^(log2(prop.mat.u[i+1,]) - mean(log2(prop.mat.u[i+1,])))
+}
+
+par(mfrow=c(2,4), mar=c(4,4,3,1) )
+
+plot(mat.double[,1], pch=20, type="b",  ylim=c(min(mat.double), max(mat.double)), xlab="time point", ylab="raw count")
+title( main="Constrained\ninput", adj=0.5)
+points(mat.double[,2], type="b",pch=21, col="gray")
+points(mat.double[,3], type="b",pch=22, col="orange")
+points(mat.double[,num.one + 10], type="b",pch=23, col="blue")
+points(mat.double[,num.one+4], type="b",pch=24, col="red")
+
+plot(prop.mat[,1], pch=20, type="b", ylim=c(min(prop.mat[,num.one+4]), max(prop.mat)), xlab="time point", ylab="raw proportion")
+title( main="Constrained\nproportion", adj=0.5)
+points(prop.mat[,2], type="b", pch=21, col="gray")
+points(prop.mat[,3], type="b", pch=22, col="orange")
+points(prop.mat[,num.one+10], type="b", pch=23, col="blue")
+points(prop.mat[,num.one+4], type="b", pch=24, col="red")
+
+plot(mat.double[,1], pch=20, type="b", log="y", ylim=c(min(mat.double), max(mat.double)), xlab="time point", ylab="log10 count")
+title( main="Constrained\ninput", adj=0.5)
+points(mat.double[,2], type="b",pch=21, col="gray")
+points(mat.double[,3], type="b",pch=22, col="orange")
+points(mat.double[,num.one + 10], type="b",pch=23, col="blue")
+points(mat.double[,num.one+4], type="b",pch=24, col="red")
+
+plot(prop.mat[,1], pch=20, type="b", ylim=c(min(prop.mat[,num.one+4]), max(prop.mat)), xlab="time point", log="y", ylab="log10 proportion")
+title( main="Constrained\nproportion", adj=0.5)
+points(prop.mat[,2], type="b", pch=21, col="gray")
+points(prop.mat[,3], type="b", pch=22, col="orange")
+points(prop.mat[,num.one+10], type="b", pch=23, col="blue")
+points(clr.mat[,num.one+4], type="b", pch=24, col="red")
+
+# unconstrained
+plot(mat.double.u[,1], pch=20, type="b",  ylim=c(min(mat.double.u), max(mat.double.u)), xlab="time point", ylab="raw count")
+title( main="Unconstrained\ninput", adj=0.5)
+points(mat.double.u[,2], type="b",pch=21, col="gray")
+points(mat.double.u[,num.one + 10], type="b",pch=23, col="blue")
+points(mat.double.u[,num.one+4], type="b",pch=24, col="red")
+
+plot(prop.mat.u[,1], pch=20, type="b", ylim=c(min(prop.mat.u[,num.one+4]), max(prop.mat.u)), xlab="time point", ylab="raw proportion")
+title( main="Unconstrained\nproportion", adj=0.5)
+points(prop.mat.u[,2], type="b", pch=21, col="gray")
+points(prop.mat.u[,num.one+10], type="b", pch=23, col="blue")
+points(prop.mat.u[,num.one+4], type="b", pch=24, col="red")
+
+plot(mat.double.u[,1], pch=20, type="b", log="y", ylim=c(min(mat.double.u), max(mat.double.u)), xlab="time point", ylab="log10 count")
+title( main="Unconstrained\ninput", adj=0.5)
+points(mat.double.u[,2], type="b",pch=21, col="gray")
+points(mat.double.u[,num.one + 10], type="b",pch=23, col="blue")
+points(mat.double.u[,num.one+4], type="b",pch=24, col="red")
+
+
+plot(prop.mat.u[,1], pch=20, type="b", ylim=c(min(prop.mat.u[,num.one+4]), max(prop.mat.u)),log="y", xlab="time point", ylab="log10 proportion")
+title( main="Unconstrained\nproportion", adj=0.5)
+points(prop.mat.u[,2], type="b", pch=21, col="gray")
+points(prop.mat.u[,num.one+10], type="b", pch=23, col="blue")
+points(prop.mat.u[,num.one+4], type="b", pch=24, col="red")
+
+@
+\caption{High-throughput sequencing affects the shape of the data differently on constrained and unconstrained data. The two left panels show the absolute number of reads in the input tube for 20 steps where the green and black OTUs are changing abundance by 2-fold each step. The gray, blue and red OTUs are held at a constant number in each step in both cases.  The second column shows the output in proportions (or ppm, or FPKM) after random sampling to a constant sum, as occurs on the sequencer. The orange OTU in the constrained data set is much more abundant than any other, and is changing to maintain a constant number of input molecules.  Samples in the two right columns are the same values plotted on a log scale on the Y-axis for convenience. Note how the constrained data is the same before and after sequencing while the unconstrained data is severely distorted. }
+\label{constant}
+\end{center}
+\end{figure}
+It is  assumed that the output from a high-throughput sequencing experiment represents in some way the underlying abundance of the input DNA molecules. The input counts panels on the left side of Figure \ref{constant} shows two  idealized experiments. The top left shows the case where the total count of all nucleic acid species in the input is constrained, the bottom left illustrates the case where the total count is unconstrained. These are modelled as a time series, but any  process would produce the same results. 
+
+Constrained datasets  occur if the increase or decrease in any component is exactly compensated by the increase or decrease of one or more others. Here the total  count  remains constant across all experimental conditions. Examples of constrained datasets would include  allele frequencies at a locus where the total has to be 1, and the RNA-seq where the induction of genes occurs in a steady-state cell culture. In this case, any process, such as sequencing that generates a proportion simply recapitulates the data with sampling error. The unspoken assumption in most high throughput experimental designs is that this assumption is true---\emph{ it is not!}
+
+An unconstrained dataset  results if the total count is free to vary. Examples of unconstrained datasets would include ChIP-Seq, RNA-seq where we are examining two  different conditions or cell populations, metagenomics, etc. Importantly, 16S rRNA gene sequencing analyses are almost always free to vary; that is, the total bacterial load is rarely constant in an environment. Thus, the unconstrained data type would be the predominant type of data that would be expected.
+
+The relative abundance panels on the right side of Figure \ref{constant} shows the result of random sampling with a defined maximum value in these two types of datasets. This random sampling reflects the data that results from high throughput sequencing where the total number of reads is constrained by the instrument capacity. The data is represented as a proportion, but  scales to parts per million or parts per billion  without changing the shape. Here we see that the shape of the data after sequencing is very similar to the input data in the case of constrained, but is very different in the case of non-constrained data. In the unconstrained dataset, observe how the blue and red features appear to be constant over the first 10 time points, but then appear to decrease in abundance at later time points. Conversely, the black feature appears to increase linearly at early time points, but appears to become constant at  late time points. Obviously, we would misinterpret what is happening if we compared early and late timepoints in the unconstrained dataset. It is also worth noting how the act of random sampling makes the proportional abundance of the rare OTU species uncertain in both the constrained and unconstrained data, but has little effect on the relative apparent effect on the relative abundance of OTUs with high counts.
+
+%We assume that the abundance of each input DNA species that is observed after sequencing reflects a random sample of the input  molecules. We can see that  that this may indeed be the case if the total number of  molecules in the input sample is constant. This constraint would be met if, for example, an increase in one or more DNA species was balanced with an equivalent decrease in one or more different species. Such a constraint would be met In the figure, the red and blue OTU sequences are held constant in each sample, the green OTU is decreasing by 2 fold and the black OTU is increasing by 2 fold in each subsequent sample. The abundance of the orange OTU is adjusted such that the total sum of the OTU sequences in the input is held constant. Here it can be seen that the input counts and the relative abundance of each species following sequence have similar shapes, with the exception that the rarest species display significant variability because of random sampling.
+
+
+%%%%%%%%%%%%%%%%
+%\newpage
+\subsection{Commonly used transformations are misleading}
+Current practice is to examine the datasets using `relative abundance' values, that is, the proportional abundance of the OTUs either before or after normalization for read depth. This approach is equivalent to examining the input unconstrained data of the type seen in Figure \ref{constant} in the relative abundance sample space in the bottom right panel of the figure. This approach will obviously lead to incorrect assumptions in at least some cases. For example, depending upon the steps chosen to compare, the blue OTU, that has constant counts in the input, will be seen to either increase or decrease in abundance. Conversely, the green OTU, that is always decreasing in abundance will be seen to be constant if comparing samples 1-8. 
+
+The ecological literature offers many different transformations for such data, often as a way of making the data appear `more normal'. Figure  \ref{transform} shows the results of five such transformations. \begin{itemize}
+\item The frequency transform divides the each OTU value by the largest OTU count, and then divides the resulting values by the number of OTUs in the sample that had non-zero counts. 
+\item The Hellinger transformation that takes the square root of the relative abundance (proportion) value. 
+\item The range transform standardizes the values to have a range from 0 to 1. OTUs with 0 counts are set to 0. 
+\item The standardize transform standardizes the values for each sample to have a mean of 0 and a variance of 1. I
+\item The log transform divides each OTU count in a sample by the minimum non-zero count value, then takes the logarithm of the resulting value and adds 1. Counts of 0 are assigned a value of 0 to avoid taking the logarithm of 0. 
+
+\item The centred log-ratio transformation divides the OTU values by the geometric mean OTU abundance, and then takes the logarithm. 
+\end{itemize}
+
+It is obvious that the first four transformations result in data that badly mis-represents the shape of the actual input data. The log transformation, however results in the shape of the output data approximating the shape of the input data, except that the uncertainty of each data point is large. The ratio transform his transformation accurately recapitulates the shape of the original input data, and more accurately represents the uncertainty of each data point. 
+
+
+\begin{figure}
+\begin{center}
+
+<<transformations,echo=FALSE,fig.width=6,fig.height=4,warning=F,message=F>>=
+
+#RAW DATA ON MBQC DISK
+#Original script at: "/Users/ggloor/Documents/0_techrep_blog/analysis_joint
+
+library(vegan)
+rdirichlet <- function (n, alpha)
+{
+  if(length(n) > 1) n <- length(n)
+  #if(length(n) == 0 || as.integer(n) == 0) return(numeric(0))
+  #n <- as.integer(n)
+  if(n < 0) stop("value(n) can not be negative in rtriang")
+  
+  if(is.vector(alpha)) alpha <- t(alpha)
+  l <- dim(alpha)[2]
+  x <- matrix(rgamma(l * n, t(alpha)), ncol = l, byrow=TRUE)  # Gere le recycling
+  return(x / rowSums(x))
+}
+
+num.one = 100
+
+mat.double <- matrix(data=NA, nrow=20, ncol=num.one + 10)
+prop.mat <- matrix(data=NA, nrow=20, ncol=num.one + 10)
+clr.mat <- matrix(data=NA, nrow=20, ncol=num.one + 10)
+hel.mat <- matrix(data=NA, nrow=20, ncol=num.one + 10)
+log.mat <- matrix(data=NA, nrow=20, ncol=num.one + 10)
+freq.mat <- matrix(data=NA, nrow=20, ncol=num.one + 10)
+range.mat <- matrix(data=NA, nrow=20, ncol=num.one + 10)
+pa.mat <- matrix(data=NA, nrow=20, ncol=num.one + 10)
+
+# non-constant sum input
+minimum.count <- 1 # multiplier to set minimum count for in.put
+# non-constant sum input with both one big increase and one big decrease
+in.put <- c(10,20971,1,1,5,10,20,50,100,200,1000) * minimum.count
+total.sum <- sum(in.put + 1) * 1000
+
+for(i in 0:19){
+	# non-constant sum input
+	#junk <- in.put * c(2^i, rep(1,num.one + 9))
+	junk <- in.put * c(2^i, rep(1 ^ i,num.one + 9))
+	mat.double[i+1,] <- junk
+	prop.mat[i+1,] <- as.numeric( rdirichlet(1, junk) )
+	clr.mat[i+1,] <- 2^(log2(prop.mat[i+1,]) - mean(log2(prop.mat[i+1,])))
+	hel.mat[i+1,] <- sqrt(prop.mat[i+1,])
+	freq.mat[i+1,] <- decostand(prop.mat[i+1,], method="freq")
+	log.mat[i+1,] <-  2^(decostand(prop.mat[i+1,], method="log")) #this is the divide by the minimum transformation from decostand that precedes taking the logarithm
+	range.mat[i+1,] <- decostand(prop.mat[i+1,], method="range")
+	pa.mat[i+1,] <- 10^decostand(prop.mat[i+1,], method="standardize")
+}
+
+par(mfrow=c(2,3), mar=c(4,4,3,1))
+
+plot(freq.mat[,1], pch=20, type="b", log="y", ylim=c(min(freq.mat[,num.one+4]), max(freq.mat)),main="frequency", xlab="time point", ylab="value")
+#points(freq.mat[,2], type="b", pch=19, col="green")
+#points(freq.mat[,3], type="b", pch=19, col="orange")
+points(freq.mat[,num.one+10], type="b", pch=23, col="blue")
+points(freq.mat[,num.one+4], type="b", pch=24, col="red")
+
+plot(hel.mat[,1], pch=20, type="b", log="y", ylim=c(min(hel.mat[,num.one+4]), max(hel.mat)),main="hellinger", xlab="time point", ylab="value")
+#points(hel.mat[,2], type="b", pch=19, col="green")
+#points(hel.mat[,3], type="b", pch=19, col="orange")
+points(hel.mat[,num.one+10], type="b", pch=23, col="blue")
+points(hel.mat[,num.one+4], type="b", pch=24, col="red")
+
+plot(range.mat[,1], pch=20, type="b", log="y", ylim=c(min(range.mat[,num.one+4]), max(range.mat)),main="range ", xlab="time point", ylab="value")
+#points(range.mat[,2], type="b", pch=19, col="green")
+#points(range.mat[,3], type="b", pch=19, col="orange")
+points(range.mat[,num.one+10], type="b", pch=23, col="blue")
+points(range.mat[,num.one+4], type="b", pch=24, col="red")
+
+plot(pa.mat[,1], pch=20, type="b", log="y", ylim=c(min(pa.mat[,num.one+4]), max(pa.mat)),main="standardize", xlab="time point", ylab=" value")
+#points(pa.mat[,2], type="b", pch=19, col="green")
+#points(pa.mat[,3], type="b", pch=19, col="orange")
+points(pa.mat[,num.one+10], type="b", pch=23, col="blue")
+points(pa.mat[,num.one+4], type="b", pch=24, col="red")
+
+plot(log2(log.mat[,1]), pch=20, type="b", log="y", ylim=c(log2(min(log.mat[,num.one+4])), log2(max(log.mat))),main="log", xlab="time point", ylab="value")
+#points(log.mat[,2], type="b", pch=19, col="green")
+#points(log.mat[,3], type="b", pch=19, col="orange")
+points(log2(log.mat[,num.one+10]), type="b", pch=23, col="blue")
+points(log2(log.mat[,num.one+4]), type="b", pch=24, col="red")
+
+plot(log2(clr.mat[,1]), pch=20, type="b",  ylim=c(log2(min(clr.mat[,num.one+4])), log2(max(clr.mat))),main="clr", xlab="time point", ylab=" value")
+#points(clr.mat[,2], type="b", pch=19, col="green")
+#points(clr.mat[,3], type="b", pch=19, col="orange")
+points(log2(clr.mat[,num.one+10]), type="b", pch=19, col="blue")
+points(log2(clr.mat[,num.one+4]), type="b", pch=19, col="red")
+@
+\caption{The effect of ecological transformations on unconstrained high throughput sequencing datasets. Data generated as in Figure \ref{constant} were transformed with five different approaches implemented in the vegan ecological analysis package, and with the entered log-ratio approach suggested by Aitchison.   }
+\label{transform}
+\end{center}
+\end{figure}
+
+
+
+
+\subsection{A count of 0 does not mean that you expect 0!}
+A common misconception to normalizing by the geometric mean is that the geometric mean is not defined if any of the values in a sample are 0. While this is true, values of 0 for an OTU can arise because the OTU sequence could not occur in the experiment, or because the OTU could exist in one group but not the other, or because the OTU was very rare in one or more samples making its selection from the library subject to chance. In the first case, the OTU would not be found in any sample, and that OTU could simply be deleted from the dataset without effect. In the second case, the OTU would be represented in one group but not the other. In the third case, where an OTU has at least one count in at least one sample,  a value of 0 could arise in other samples because of sequencing depth. In the latter two  cases, it is possible that the OTU could  have been detected if more reads per sample were obtained or if more replicates of the library were sequenced.  
+
+Current practice in 16S rRNA gene sequencing studies is to assume that an observed value of 0 in a sample represents the actual value. In RNA-seq it is common to remove all genes where the total sum across all samples is small (usually with a mean of 2 or less and no more than about 10 counts in any sample). In either case, the assumption is that variables with very low counts are irrelevant. 
+
+This assumption was  tested by sequencing the same library from 16 different samples on two individual Illumina runs, and then determining the OTU count in one run if the OTU had a count of 0, 1, 2, or 3 in the other run. Figure \ref{replicate} shows the result, and it can be seen that the count observed for an OTU in one replicate is often very different from the count observed for the other replicate. Similar observations hold for RNA-seq. It is clear that the absolute number of counts observed varies between replicates and as expected the underlying distributions approximate what would be expected for random sample of the input library. The uncertainty in ascertaining the true values for OTUs with low counts is the reason that the log transformation in Figure \ref{transform} injects undesired variability into the data. 
+\begin{figure}
+\begin{center}
+
+<<zero_data,echo=FALSE,fig.width=4,fig.height=4>>=
+
+#RAW DATA ON MBQC DISK
+#Original script at: "/Users/ggloor/Documents/0_techrep_blog/analysis_joint
+
+#original data
+data <- read.table("/Users/ggloor/Documents/0_techrep_blog/analysis_exact/td_OTU_tag_mapped_exact.txt", comment.char="",sep="\t", header=T, check.names=F, skip=1, row.names=1)
+newdR <- data[order(colnames(data))]
+
+run.1 <- c(1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31)
+run.2 <- run.1 + 1
+if0 <- c(newdR[,run.1][newdR[,run.2] == 0], newdR[,run.2][newdR[,run.1] == 0])
+if1 <- c(newdR[,run.1][newdR[,run.2] == 1], newdR[,run.2][newdR[,run.1] == 1] )
+if2 <- c(newdR[,run.1][newdR[,run.2] == 2], newdR[,run.2][newdR[,run.1] == 2] )
+if3 <- c(newdR[,run.1][newdR[,run.2] == 3], newdR[,run.2][newdR[,run.1] == 3])
+par(mfrow=c(2,2), mar=c(3, 2, 2, 2))
+barplot(table(if0), col=c("black", rep("gray", 6)))
+title("OTU=0", adj=0, cex=0.7)
+barplot(table(if1), col=c(rep("gray",1), "black", rep("gray", length(table(if1) -2))) )
+title("OTU=1", adj=0, cex=0.7)
+barplot(table(if2), col=c(rep("gray",2), "black", rep("gray", length(table(if2) -3))) )
+title("OTU=2", adj=0, cex=0.7)
+barplot(table(if3), col=c(rep("gray",3), "black", rep("gray", length(table(if3) -4))) )
+title("OTU=3", adj=0, cex=0.7)
+@
+\caption{The distribution of counts in a replicate OTU when the first OTU has counts between 0 and 3. The same library of sixteen different 16S rRNA gene amplification samples were sequenced on two different Illumina HiSeq runs, and the count of OTUs that had values of 0 to 3 in one replicate, shown by the black bar, were tabulated for the other replicate, shown by the grey bar. Sequencing depth for each replicate was within 10\% of the the other replicate. }
+\label{replicate}
+
+\end{center}
+\end{figure}
+
+\begin{figure}
+\begin{center}
+
+<<rare_vs_Dir,echo=FALSE,fig.width=6,fig.height=3.7>>=
+
+#RAW DATA ON MBQC DISK
+#Original script at: "/Users/ggloor/Documents/0_techrep_blog/analysis_joint
+
+
+rdirichlet <- function (n, alpha)
+{
+  if(length(n) > 1) n <- length(n)
+  #if(length(n) == 0 || as.integer(n) == 0) return(numeric(0))
+  #n <- as.integer(n)
+  if(n < 0) stop("value(n) can not be negative in rtriang")
+  
+  if(is.vector(alpha)) alpha <- t(alpha)
+  l <- dim(alpha)[2]
+  x <- matrix(rgamma(l * n, t(alpha)), ncol = l, byrow=TRUE)  # Gere le recycling
+  return(x / rowSums(x))
+}
+
+prior <- 0.5 #dirichlet and plotting prior
+
+#original data
+data <- read.table("/Users/ggloor/Documents/0_techrep_blog/analysis_exact/td_OTU_tag_mapped_exact.txt", comment.char="",sep="\t", header=T, check.names=F, skip=1, row.names=1)
+newdR <- data[order(colnames(data))]
+
+d.21 <- data.frame(newdR[,"CACTAC-CACTAC-1"], newdR[,"CACTAC-CACTAC-2"])
+
+rownames(d.21) <- rownames(newdR)
+
+colnames(d.21) <- c("Rep_A", "Rep_B")
+
+d.21[d.21 == 0] <- prior
+
+round.digits <- 1 # This affects the low end variation estimate strongly
+# dirichlet
+xa <- round(rdirichlet(100000, d.21[,"Rep_A"]) *  sum(d.21[,"Rep_A"]), round.digits)
+xa[ xa==0 ] <- prior
+ya <- apply(xa, 1, function(x){ abs(log2(x) - log2(d.21[,"Rep_A"]) ) })
+ya.q <- apply(ya, 1, function(x) {quantile(x,probs=c(0.05,0.4,0.99))})
+yaE <- apply(xa, 1, function(x){ log2(abs(x- d.21[,"Rep_A"]) ) })
+yaE[ is.nan(yaE) ] <- 0
+yaE.q <- apply(yaE, 1, function(x) {quantile(x,probs=c(0.05,0.4,0.99))})
+
+# rarefaction dataset
+#rare1 <- matrix(data=NA, nrow=1000,ncol=nrow(newdR))
+#rare2 <- matrix(data=NA, nrow=1000,ncol=nrow(newdR))
+#rare_R_1 <- matrix(data=NA, nrow=1000,ncol=nrow(newdR))
+#rare_R_2 <- matrix(data=NA, nrow=1000,ncol=nrow(newdR))
+#for(i in 0:999){
+#	file = paste("/Users/ggloor/Documents/0_techrep_blog/analysis_exact/qiime/jknife_txt/jknife",i,".txt", sep="")
+#	d <- read.table(file,comment.char="", header=T, check.names=F, skip=1, row.names=1, sep="\t")
+#	j <- i+1
+#	rare1[j,] <- d[,"CACTAC-CACTAC-1"]
+#	rare2[j,] <- d[,"CACTAC-CACTAC-2"]
+#	file = paste("/Users/ggloor/Documents/0_techrep_blog/analysis_exact/qiime/rare_txt/jknife",i,".txt", sep="")
+#	d <- read.table(file,comment.char="", header=T, check.names=F, skip=1, row.names=1, sep="\t")
+#	j <- i+1
+#	rare_R_1[j,] <- d[,"CACTAC-CACTAC-1"]
+#	rare_R_2[j,] <- d[,"CACTAC-CACTAC-2"]
+#}
+#write.table(rare_R_1, file="rare_R_1.txt")
+#write.table(rare_R_2, file="rare_R_2.txt")
+
+rare1 <- read.table("~/Documents/0_techrep_blog/analysis_exact/rare_R_1.txt")
+rare2 <- read.table("~/Documents/0_techrep_blog/analysis_exact/rare_R_2.txt")
+
+#correction for number of reads in rarefied samples
+rare2[rare2 == 0] <- prior
+rare1[rare1 == 0] <- prior
+ra <- apply(rare1, 1, function(x){ abs(log2(x/(10000/sum(d.21[,"Rep_A"]))) - log2(d.21[,"Rep_A"]) ) })
+ra.q <- apply(ra, 1, function(x) {quantile(x,probs=c(0.05,0.4,0.99))})
+
+raE <- apply(rare1, 1, function(x){ log2(abs(x/(10000/sum(d.21[,"Rep_A"])) - d.21[,"Rep_A"]) ) })
+raE[ is.nan(raE) ] <- 0
+raE.q <- apply(raE, 1, function(x) {quantile(x,probs=c(0.05,0.4,0.99))})
+
+# resampling
+rare2[rare2 == 0] <- prior
+raR <- apply(rare2, 1, function(x){ abs(log2(x/(10000/sum(d.21[,"Rep_A"]))) - log2(d.21[,"Rep_A"]) ) })
+raR.q <- apply(raR, 1, function(x) {quantile(x,probs=c(0.05,0.4,0.99))})
+
+raRE <- apply(rare2, 1, function(x){ log2(abs(x/(10000/sum(d.21[,"Rep_A"])) - d.21[,"Rep_A"]) ) })
+raRE[ is.nan(raRE) ] <- 0
+raRE.q <- apply(raRE, 1, function(x) {quantile(x,probs=c(0.05,0.4,0.99))})
+
+
+#A estimated variance plotted vs A-B difference
+mincount <- apply(d.21[,1:2], 1, min)
+rat <- sum(d.21[,1]) / sum(d.21[,2]) 
+
+par(mfrow=c(1,2))
+
+plot( log2(mincount), abs(log2(abs(d.21[,"Rep_A"] - round( rat * d.21[,"Rep_B"], 1)))), xaxt="n", yaxt="n", main="Difference", pch=19, cex=1.1, col=rgb(0,0,0,0.3),  ylab="Absolute Difference", xlab="Feature Count", ylim=c(0,8), type="h", lwd=4)
+points(loess.smooth(x=log2(d.21[,"Rep_A"]), y= raE.q[3,]), type="l", col="red", lwd=2)
+points(loess.smooth(x=log2(d.21[,"Rep_A"]), y= raRE.q[3,]), type="l", col="orange", lwd=2)
+points(loess.smooth(x=log2(d.21[,"Rep_A"]), y= yaE.q[3,]), type="l", col="blue", lwd=2)
+axis(1, at=log2(c(1,10,100,1000,10000)), labels=c(1,10,100,"1e3","1e4"))
+axis(2, at=log2(c(1,10,100)), labels=c(1,10,100))
+
+#rect(log2(1e3), -1, log2(1e5), 10.5,  col=rgb(0,0,0,0.15), lwd=NULL, border = NA)
+#rect(2, -1, 5, 10.5,  col=rgb(.64,.2,.06,0.15), lwd=NULL, border = NA)
+
+
+plot( log2(mincount), abs(log2(d.21[,"Rep_A"]) - log2(round(rat * d.21[,"Rep_B"], 1))), xaxt="n", yaxt="n", main="Ratio ", pch=19, cex=1.1, col=rgb(0,0,0,0.3),  ylab="Replicate Ratio", xlab="Feature Count", ylim=c(0,3), type="h", lwd=4)
+points(loess.smooth(x=log2(d.21[,"Rep_A"]), y= ra.q[3,]), type="l", col="red", lwd=2)#points(loess.smooth(x=log2(d.21[,"Rep_A"]), y= raR.q[3,]), type="l", col="orange", lwd=2)
+#points(log2(d.21[,"Rep_A"]),raR.q[3,], pch=19,cex=0.5, col="orange")
+points(loess.smooth(x=log2(d.21[,"Rep_A"]), y= ya.q[3,]), type="l", col="blue", lwd=2)
+#points(log2(d.21[,"Rep_A"]), ya.q[3,], pch=19, cex=0.5, col=rgb(0,0,1,0.4))
+axis(1, at=log2(c(1,10,100,1000,10000)), labels=c(1,10,100,"1e3","1e4"))
+axis(2, at=log2(c(1,2,4,8)), labels=c(1,2,4,8))
+
+#rect(-2, -1, 2, 5.5,  col=rgb(0,0,0,0.15), lwd=NULL, border = NA)
+#rect(2, -1, 5, 5.5,  col=rgb(.64,.2,.06,0.15), lwd=NULL, border = NA)
+
+@
+\caption{Examining technical replicate variability of 16S rRNA gene sequencing experiments as linear differences and as ratios. The same input DNA library for fourteen samples was sequenced on two different HiSeq lanes to estimate the technical variability. The difference between the counts for each OTU in replicate A and B were plotted in two ways. First, as differences between counts in replicates A and B, and second, as the ratio between the counts observed in replicates A and B. The grey bars show the actual difference or ratio observed plotted vs. the minimum value observed for each OTU in the replicates. The estimated variability in the data was determined in three ways: 1), by rarefying the data with the Jacknife or 2) with the Bootstrap approach in QIIME, or 3) by drawing instances from the Dirichlet distribution. The 99th percentile of the difference between these random instances and the actual data found by these three approaches is shown as the red, orange or blue line.  }
+\label{rarefy}
+\end{center}
+\end{figure}
+
+
+\subsection{The uncertainty is relative}
+
+That the true count of an OTU cannot be determined from a single sequencing run, suggests that we might be better to estimate the range of values that an OTU can assume, and to determine how these estimates change the results of the analysis performed.  case, we do not know the true underlying value for the OTU count and must estimate it. There are two approaches used to estimate the uncertainty of 16S rRNA gene sequencing experiments. 
+
+Subsampling, or rarefaction, is performed to normalize all samples in 16S rRNA gene sequencing to a common sequencing depth, and to estimate the variability in the data for downstream procedures such as $\alpha$- and $\beta$-diversity analyses. An alternative to subsampling is the draw instances of the data from the Dirichlet distribution that treats each variable as a multinomial Poisson instance with the constraint that the values sum to 1. We have shown previously that the instances of the Dirichlet distribution accurately reflect the underlying technical variation in RNA-seq datasets (see Figure 1 in \cite{fernandes:2013}). Note that when sampling occurs from an Poisson process that the error expected is relatively large for low counts and relatively low for high counts because the expected value and the variance of the data are equal. Thus, the expected error is 100\% for a count of 1, and 10\% for a count of 100 and 1\% for a count of 10000, etc. 
+
+One caveat with Dirichlet subsampling is that it is a Baysian approach to estimate the distribution of frequencies for each OTU. Thus, we must include our prior belief of the actual abundance of each OTU before sampling. This is often thought to inject investigator bias into the analysis. The bias will be most extreme at the margins of the estimation because a value close to 0 indicates a prior belief that the OTU should never have been detected, while a value close to 1 indicates a prior belief that the OTU should have been detected with certainty. Thus the least biased value in general should be 0.5\cite{Jaynes:2003}. In practice we observe that the choice of prior has little effect on the outcome provided it is not close to 0 or 1.
+
+We examined how well both procedures modelled the actual underlying variation in OTU counts from the replicate samples used in Figure \ref{replicate}. Monte-Carlo instances of the data drawn from the Dirichlet distribution were generated and multiplied by the number of total reads for the sample. Subsampling was  performed with QIIME\cite{Caporaso:2010a} using the Jacknife procedure (i.e., subsampling from an original distribution without replacement\cite{Efron:1981}), and with the Bootstrapping procedure\cite{Efron:1981} (i.e., subsampling with replacement) using a sampling depth of 10000 using the multiple\_rarefactions.py script in QIIME v1.8.0. This reduced the read depth for the samples by a factor between 2 and 4.5 fold, which is well within the subsampling parameters of recent experiments. The difference between the read counts observed in the subsampled, Dirichret, and actual data was calculated as for the replicate difference. 
+
+
+Figure \ref{rarefy} shows an example  plot of the technical variability that occurs at the OTU level for the same samples sequenced to approximately the same sequencing depth on two separate Illumina lanes. Zero counts, if they occurred in one replicate were replaced with 0.5\cite{fernandes:2013,martin:2003}. The actual technical variability is shown as the bars, and is plotted as the absolute difference between replicate 1 and replicate 2. The density of the bars illustrate the number of observations at that co-ordinate, with darker bars representing more observations. The red and orange lines in Figure \ref{rarefy} show the loess line of best fit for the 99$^{th}$ percentile of the difference between the actual and the Jackknifed and bootstrapped rarefied data, and the blue line shows the 99th percentile for the Dir instances. 
+
+The left plot shows that when treating the data as absolute counts, the difference between the actual replicates is greatest when the read counts are the highest, and that OTUs with very small counts tend to have small differences. Plots such as this form the basis for using the Negative Binomial to estimate variability in RNA-seq datasets of this type, and are one of the motivations to use RNA-Seq based statistical procedures for 16S rRNA sequencing datasets\cite{McMurdie:2014a}.  
+
+Note that the 99th percentile of the variability observed for all three sampling methods under-estimates the variability in the data when the counts are close to 0. Interestingly, the Jacknife and bootstrap estimation methods become non-linear in this region and severely under-estimate the variability seen for OTUs with less than 10 counts. In contrast the Dirichlet instances become slightly more variable when the feature counts are low. The reasons for the under-counting of technical variance by subsampling are obvious upon reflection: subsampling is constrained by the actual observations being sampled and so can only result in estimating \emph{fewer} reads per feature, never more.  
+
+The right plot shows the same data plotted as the ratio between the counts observed for replicates A and B. When plotted in this way, it is clear that the rare OTUs, for which we have the least accurate estimate of their underlying abundance, show the largest  differences in ratio abundance. Conversely, the most abundant OTUs show the smallest amount of  variability. In this plot the range of variability estimated by Dirichlet sampling brackets the observed variability, and the subsampling approaches again under-estimate the variability of OTUs with very low numbers of counts. The Loess line of best fit appears to under-represent the variation when feature counts are high, but this is an artefact of the line fitting procedure.
+
+ 
+\subsection{Scaling the data}
+It is obvious that the data for each sample must be placed on a common scale, and while the logarithm of the counts reduces the difference between extreme values, the data is skewed because the minimum is the logarithm of the value assigned to 0 (in the examples above, this is $log2(0.5)=-1$) and the maximum value is proportional to count value of the most abundant OTU in the sample. So simply taking the logarithm while commonly used for proportional data, does not scale the data properly\cite{Aitchison:1986}. The solution devised by Aitchison, and validated and extended others\cite{pawlowsky2011compositional} is to centre the logarithmic transformation on the geometric mean as was done for the ratio transform used in Figure \ref{transform}. This is referred to as the centred log-ratio transformation. This transformation has several effects. First, the data is on a common scale, where the values can be interpreted as the ratio between the count for each OTU and the geometric mean count for all OTUs in the sample. Second, the differences between values represent the ratios between values in that sample; i.e., a difference of 1 represents a two-fold abundance difference if the base of the logarithm is 2. Third, converting the count values to ratios preserves the 1:1 correspondence between the original values. Fourth, the relationships between values is not affected if particular OTUs are included or excluded from analysis. Finally, the ratio values are now linearly related and so can now be used in standard statistical analyses. Atichison\cite{Aitchison:1986}, Pawlsky-Glahn\cite{Pawlowsky-Glahn:2006}, and Egozcue\cite{egozcue2005}, have done much work to develop rigorous approaches to analyze such data types\cite{pawlowsky2011compositional}, and we have developed an R package that can be useful to determine differential abundances of OTUs in these datasets\cite{fernandes:2013,fernandes:2014}. 
+
+\subsection{The power of compositional data analysis: more formal statement.}
+A dataset is defined as compositional if it contains $D$ multiple parts, where each part is non-negative, and the sum of the parts is known (Aitchison 1986, pg 25). A composition containing $D$ parts where the sum is 1 can be formally stated as: $C_D = \{(x_1,x_2,x_3, \ldots x_D); x_1\ge 0, x_2\ge 0, x_3 \ge 0, \ldots x_D \ge 0; \sum_{x=1}^{D} = 1\}$. The sum of the parts is usually set to 1 or 100, but can take any value; i.e., any composition can be scaled to any arbitrary sum such as a ppm.  It is important to know that the values of the parts of compositional datasets are constrained because of the constant sum. The constant sum constraint causes the parts to have a negative correlation bias since an increase in the value of one part must be offset by a decrease in value of one or more other parts. Thus any correlation-based analysis is invalid in these datasets, as originally noted by Pearson\cite{Pearson:1896}. In addition, compositional datasets have the property that they are described by $D-1$ observations if the sum of the parts is known\cite{Aitchison:1986}. In other words, if we know that all parts sum to 1, then the last part can be known by subtracting the sum of all other parts from 1, i.e., $x_D = 1-\sum_{x=1}^{D-1}$. Graphically, this means that compositions inhabit a space called the Aitchison simplex that contains 1 fewer dimensions than the number of parts. The distances between parts on the Aitchison simplex are not linear, especially at the boundaries (see Figure \ref{constant}). This is important because all common statistical tests assume a that differences between parts are linear (or additive). Thus, while standard tests will produce output, the output will be misleading because distances on the simplex are non-linear and bounded. 
+
+\subsubsection{Sub-compositions:}~Compositional data also exhibit the unusual property that the examination of a sub-composition of these data will provide different answers than will be obtained with the full dataset\cite{Aitchison:1986}. This is problematic because 16S rRNA gene sequencing experimental designs are \emph{always} sub-compositions. Inspection of papers in the literature provide many examples. For example, it is common practice to discard rare OTU species prior to analysis and to re-normalize by dividing the counts for the remaining OTUs by the new sample sum. It is also common to use only one or a few taxonomic groupings to determine differences between experimental conditions. In the case of RNA-seq only the mRNA or miRNA is sequenced. All of these practices expose the investigator to the problem of non-coherence between sub-compositions.
+
+\subsubsection{Spurious correlations:}~Finally, it is important to know that compositional data has the additional problem of  spurious correlation \cite{Pearson:1896}, and in fact this was the first troubling issue identified with compositional data. This phenomenon is best illustrated with  the following example from Lovell et. al\cite{Lovell:2015aa}, where they show how simply dividing two sets of random numbers (say abundances of OTU1 and OTU2), by a third set of random numbers (say abundances of OTU3) results in a strong correlation. Note that this phenomenon depends only on there being a common denominator.
+
+Practically speaking this means that \emph{every microbial correlation network that has ever been published is suspect} unless it was determined using SPARCC \cite{Friedman:2012}, a tool that accounts for this spurious correlation.
+
+\begin{figure}
+\begin{center}
+
+<<correlation,echo=FALSE,fig.width=5,fig.height=3.7>>=
+
+n.obs <- 100
+OTU.df <- data.frame(OTU1=rnorm(n.obs, mean=10, sd=1),
+                      OTU2=rnorm(n.obs, mean=10, sd=1),
+                      OTU3=rnorm(n.obs, mean=30, sd=4))
+OTU.df <- transform(OTU.df,
+                     OTU1.over.OTU3= OTU1/OTU3,
+                     OTU2.over.OTU3= OTU2/OTU3)
+plot(OTU.df$OTU1.over.OTU3, OTU.df$OTU2.over.OTU3, pch=19, cex=0.3,xlab="OTU1/OTU3", ylab="OTU2/OTU3")
+#cor(OTU.df$OTU1.over.OTU3, OTU.df$OTU2.over.OTU3)
+@
+\caption{Spurious correlation in compositional data. Two random vectors drawn from a Normal distribution, were divided by a third vector also drawn at random from a Normal distribution. The two vectors have nothing in common, they should exhibit  no correlation, and yes they exhibit a correlation coefficent of $>0.65$ when divided by the third vector. See the introductory section of the Supplementary Information of Lovell\cite{Lovell:2015aa} for a more complete lay description of this phenomenon.  }
+\label{correlation}
+\end{center}
+\end{figure}
+
+
+Atichison\cite{Aitchison:1986}, Pawlsky-Glahn\cite{Pawlowsky-Glahn:2006}, and Egozcue\cite{egozcue2005}, have done much work to develop rigorous approaches to analyze compositional data\cite{pawlowsky2011compositional}. The essential step is to reduce the data to ratios between the $D$ parts as outlined above. This step moves the data from the Aitchison simplex and to the more familiar Euclidian space where the distances between parts are linear. However, the investigator must keep in mind that the distances are between ratios, not between counts. Several transformations are in common use, but the one most applicable to HTS data is the centred log-ratio transformation or clr, where the data in each sample is transformed by taking the logarithm of the the ratio between the count value for each part and the geometric mean count: i.e., for D features in sample X, $clr [x_1, x_2, x_3, \ldots x_D] = [log_2(x_1/gX), log_2(x_2/gX), log_2(x_3/gX) \ldots log_2(x_D/gX)]$ where $gX$ is the geometric mean of the features in sample X. This is the transformation described above.
+
+%\subsection{Case study: rare OTUs are not reliably different between conditions.}
+%
+%Figure \ref{rarefy} shows that subsampling under-estimates the inherent technical variability in 16S rRNA gene sequencing experiments as both differences and as ratios, and that sampling from the Dirichlet distributions under-estimates the differences between replicates but not of ratios. The ratio transform in Figure \ref{transform} where the OTU counts are divided by the geometric mean of the counts for a sample, demonstrates that treating data as ratios in this way represents these data in a space that is similar to the input data whether the data is constrained or unconstrained. Thus, treating the data as centred log ratios, i.e., using clr values places these abundances on a common scale --- a ratio relative to the mean abundance in each sample and allows statistical testing to be conducted\cite{fernandes:2013, fernandes:2014}.
+%
+%As an example of the dangers of performing statistical tests on proportional data that contain many rare OTUs with high variability, we examined a dataset from a recent paper\cite{Hsiao:2013}. This paper was chosen because it was published in a high profile journal (\emph{Cell}), and because this group actually included the full read count table on which the analysis was performed. It is very likely that other papers that do not include the raw read count table would be prone to similar flaws as are outlined below. 
+%
+%This paper probed the difference between the gut microbiota of mice before and after supplementation with \emph{Bacillus fragilis} and concluded that specific organisms were restored by treatment with the bacterium. This dataset contained 10 IC (Poly IC treatment) and 10 IC+Bf (IC + \emph{B. fragilis}) samples, but was exceedingly sparse, having 1474 OTUs with a mean of 2605 reads. Thus, the mean number of reads per OTU was less than 2. Figure 4 in this paper shows six OTUs that exhibited the greatest difference between the IC and IC+Bf groups using four different widely-used approaches that all assume the data contains no technical variability, and that the data are counts not compositions. 
+%
+%We used the ALDEx2 tool to re-examine the data. ALDEx2 generates many Dirichlet Monte-Carlo instances of the data, transforms these into ratio space by the clr transformation and then performs standard statistical tests between groups. Finally, ALDEx2 reports the mean value of the statistical tests across the Dirichlet instances to identify those OTUs where the statistical value is robust to inferred technical variation\cite{fernandes:2014}.
+% 
+%
+%%d <- read.table("~/Documents/0_techrep_blog/HSIAO_CELL/data_table.txt", header=T, row.names=1, sep="\t", skip=1, comment.char="")
+%%taxon.d <- d$taxonomy
+%%d$taxonomy <- NULL
+%%IC <- as.data.frame(d[,1:20])
+%%library(ALDEx2)
+%%conds <- c(rep("BF", 10), rep("I",10))
+%%x <- aldex.clr(IC)
+%%x.eff <- aldex.effect(x, conds)
+%%x.tt <- aldex.ttest(x,conds)
+%%x.all <- data.frame(x.eff, x.tt)
+%
+%Table \ref{AYKM} compares the results for these six OTUs analyzed by the original and by the compositional approach that incorporates the effect of technical variability. The OTU identifiers given in Hsiao et. al.\cite{Hsiao:2013} are in column 1 and the total number of reads across all 20 samples is given in column 2. The P values reported in the paper by two different tools are in columns 3 and 4 and the mean P value across inferred technical replicates given by ALDEx2 are in the fifth column. 
+%
+%\begin{table}[htdp]
+%\caption{Comparison of point estimate vs. mean inferred technical replicate P values}
+%\begin{center}
+%\begin{tabular}{ll|lll|l|}
+%OTU & reads & Metastats p & LefSe LDA p & ALDEx2 Wi ep & ALDEx2 BH\\\hline
+%638 & 5  & 0.028 & 0.013 & 0.46 & 0.95\\
+%836 & 5 & 0.028 & 0.013 & 0.43 & 0.95\\
+%837 & 16 & 0.008 & 0.013 & 0.21 & 0.88\\
+%145 & 44 & 0.001 & 0.002 & 0.07 & 0.78\\
+%956 & 44 & 0.004 & 0.009 & 0.05 & 0.80\\
+%53  & 83 & 0.011 & 0.014 & 0.05 & 0.79\\
+%\end{tabular}
+%\end{center}
+%\label{AYKM}
+%\end{table}
+%
+%This re-analysis reveals that the two OTUs that had the least number of reads, OTU 638 and 836, had P values that were not robust to inferred technical variation. Figure \ref{rarefy}  suggests that OTUs with 0 or 1 reads in a sample would have the greatest error in estimation when treated as ratio data. Examination of the count values for OTUs 638 and 836 shows that each contains 5 samples with 1 count, and 15 samples with 0 counts in the dataset, and the 5 single counts are partitioned into one group. There are 60 OTUs that contain exactly 5 reads in the 20 IC vs IC+Bf samples composing the dataset; the vast majority of which are OTUs that contain only 0 or 1 read in the 20 samples. The likelihood of arranging those 5 reads exclusively into one group or the other is approximately 3\%, and so we expect $0.03 \times 60 = 1.8$ of those 60 samples to have a partition of the reads that would be classed as significant. Thus we find that in these two cases the number of features passing the statistical difference threshold  is exactly what would be expected from technical, or sampling variability given the underlying data. By incorporating technical variation, ALDEx2 correctly identifies those two OTUs as having non-significant mean P values using the Wilcoxon rank test. 
+%
+%The pattern is similar for OTU 837. This OTU contains an average of slightly less than 1 read per sample, with at least half of the  samples containing 0 or 1 reads in either group. The maximum number of reads in any sample is 4. The  OTU counts in each sample are again likely to be subject to large swings in variation when sampled from the Dirichlet distribution and examined under a compositional data approach. Here again, ALDEx2 indicates that the original P value observed is not robust to inferred technical variation.
+%
+%In contrast, the three OTUs that contained larger numbers of reads were largely robust to inferred technical variation. OTUs 145, 956 and 53 contain an average of 2, 2 and 4 reads per sample, with the majority of the reads portioned such that the read counts in one group were usually 0 or 1, and in the other group 4 or more. Here the inferred technical variance had a much smaller effect on the mean P value, and two of these three OTUs had raw P values that were at or below the 0.05 threshold used in the original paper suggesting that inferred technical variability has little effect on the conclusions. 
+%
+%Note that these investigators did not treat the data as multivariate data and did not incorporate appropriate multiple hypothesis test corrections into their statistical analyses. Reviewers and Editors should be on guard for this common omission when examining manuscripts. It is unfair to single out this paper for this omission since an examination of the most highly recommended research manuscripts in the Faculty of 1000 with the keyword `microbiome' since 2010 indicates that only three of these six papers used multiple test corrections when deciding on statistical significance and the others did not. 
+%
+%\begin{table}[htdp]
+%\caption{Comparison of point estimate vs. mean inferred technical replicate P values}
+%\begin{center}
+%\begin{tabular}{lllll}
+%Author & Year:PMID & Count table available & Differential test & MTC? \\\hline
+%Hsiao & 2013:24315484 & yes & LefSe/Metastats & no\\
+%Arumugam & 2011:21508958 & yes & Custom & yes\\
+%Markl & 2013:23328391 & no & two-part test & no\\
+%Vijay-Kumar & 2010:20203013 & no & t-test & no\\
+%Henao-Mejia & 2012:22297845 & no & t-test & yes\\
+%Smith & 2013:23363771 & no & t-test & yes\\
+%\end{tabular}
+%\end{center}
+%\label{AYKM}
+%\end{table}
+
+\section{Conclusions}
+We have shown that 16S rRNA gene sequencing datasets, and others of the same type including RNA-Seq datasets, are logically best treated as ratios because the total number of reads is uninformative, and the resulting values are best interpreted as fold-changes. We showed that treating the data as ratios where the denominator is the geometric mean for a sample accurately recapitulates the shape and the error profile of the input data. We used with Dirichlet Monte-Carlo replicates coupled with the centred log-ratio transformation to show that point-estimates of statistical significance in a real dataset can substantially inflate the observed P value because of random partitioning of low count values across datasets. 
+
+
+\bibliography{bibdesk_refs}
+
+
+\end{document}  
