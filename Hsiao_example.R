@@ -33,6 +33,10 @@
 d <- read.table("hsiao5.txt", header=T, row.names=1)
 tax.d <- read.table("tax.txt", row.names=1, header=T, sep="\t")
 
+# if you use your own table
+#      sample1 sample2 sample3 ...
+# otu1	0	10	3 ...
+# ...
 library(ALDEx2)
 
 # set up the conditions for comparison
