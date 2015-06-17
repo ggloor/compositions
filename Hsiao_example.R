@@ -49,10 +49,11 @@ conds <- c(rep("Bf", 10), rep("C", 10))
 # sampling. Each instance is then clr transformed to place the data in the correct
 # space and shape for subsequent analyses
 
-# in general 128 samples are sufficient, and the prior of 0.5 is fine
+# in general 128 samples are sufficient, a prior of 0.5 is used
 # a dynamic prior to be used when there are widely divergent read counts per
 # sample will be introduced in the next version
 
+# generate technical replicates and perform the clr transformation
 x <- aldex.clr(d, mc.samples=128)
 
 # conduct the statistical tests and calculate FDR corrected values
