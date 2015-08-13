@@ -557,17 +557,17 @@ It is obvious that the data for each sample must be placed on a common scale, an
 \subsection{The power of compositional data analysis: more formal statement.}
 A dataset is defined as compositional if it contains $D$ multiple parts, where each part is non-negative, and the sum of the parts is known (Aitchison 1986, pg 25). A composition containing $D$ parts where the sum is 1 can be formally stated as: $C_D = \{(x_1,x_2,x_3, \ldots x_D); x_1\ge 0, x_2\ge 0, x_3 \ge 0, \ldots x_D \ge 0; \sum_{x=1}^{D} = 1\}$. The sum of the parts is usually set to 1 or 100, but can take any value; i.e., any composition can be scaled to any arbitrary sum such as a ppm.  It is important to know that the values of the parts of compositional datasets are constrained because of the constant sum. The constant sum constraint causes the parts to have a negative correlation bias since an increase in the value of one part must be offset by a decrease in value of one or more other parts. Thus any correlation-based analysis is invalid in these datasets, as originally noted by Pearson\cite{Pearson:1896}. In addition, compositional datasets have the property that they are described by $D-1$ observations if the sum of the parts is known\cite{Aitchison:1986}. In other words, if we know that all parts sum to 1, then the last part can be known by subtracting the sum of all other parts from 1, i.e., $x_D = 1-\sum_{x=1}^{D-1}$. Graphically, this means that compositions inhabit a space called the Aitchison simplex that contains 1 fewer dimensions than the number of parts. The distances between parts on the Aitchison simplex are not linear, especially at the boundaries (see Figure \ref{constant}). This is important because all common statistical tests assume a that differences between parts are linear (or additive). Thus, while standard tests will produce output, the output will be misleading because distances on the simplex are non-linear and bounded. 
 
-a <- runif(100, min=0, max=10)
-b <- runif(100, min=0, max=10)
-c <- runif(100, min=0, max=10)
-abc <- rbind(a,b,c)
-abc.comp <- apply(abc, 2, function(x){x/sum(x)})
-abc.acomp <- acomp(abc)
-
-par(mfrow=c(1,3))
-scatterplot3d(t(abc))
-scatterplot3d(t(abc.comp), xlim=c(0,1), ylim=c(0,1), zlim=c(0,1))
-plot(t(abc.acomp))
+%a <- runif(100, min=0, max=10)
+%b <- runif(100, min=0, max=10)
+%c <- runif(100, min=0, max=10)
+%abc <- rbind(a,b,c)
+%abc.comp <- apply(abc, 2, function(x){x/sum(x)})
+%abc.acomp <- acomp(abc)
+%
+%par(mfrow=c(1,3))
+%scatterplot3d(t(abc))
+%scatterplot3d(t(abc.comp), xlim=c(0,1), ylim=c(0,1), zlim=c(0,1))
+%plot(t(abc.acomp))
 %
 
 \subsubsection{Sub-compositions:}~Compositional data also exhibit the unusual property that the examination of a sub-composition of these data will provide different answers than will be obtained with the full dataset\cite{Aitchison:1986}. This is problematic because 16S rRNA gene sequencing experimental designs are \emph{always} sub-compositions. Inspection of papers in the literature provide many examples. For example, it is common practice to discard rare OTU species prior to analysis and to re-normalize by dividing the counts for the remaining OTUs by the new sample sum. It is also common to use only one or a few taxonomic groupings to determine differences between experimental conditions. In the case of RNA-seq only the mRNA or miRNA is sequenced. All of these practices expose the investigator to the problem of non-coherence between sub-compositions.
