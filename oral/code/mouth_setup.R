@@ -1,4 +1,5 @@
 # read in the entire dataset, this is the metadata
+# data files are in v35 download column of: http://hmpdacc.org/HMQCP/
 id <- read.table("v35_map_uniquebyPSN.txt", header=TRUE, sep="\t", row.names=1)
 
 # this is the raw otu table
