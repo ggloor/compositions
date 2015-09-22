@@ -5,8 +5,8 @@ library(zCompositions)
 #############
 # read in the base dataset for whole mouth
 
-mouth <- read.table("~/git/working_papers/oral/data/mouth_otu.txt", header=T, row.names=1, sep="\t")
-taxon <- read.table("~/git/working_papers/oral/data/taxon_names.txt", header=T, row.names=1, sep="\t")
+mouth <- read.table("~/git/compositions/oral/data/mouth_otu.txt", header=T, row.names=1, sep="\t")
+taxon <- read.table("~/git/compositions/oral/data/taxon_names.txt", header=T, row.names=1, sep="\t")
 
 # ids have leading 700 stripped off
 # samples named as follows:
@@ -40,14 +40,10 @@ tax.0 <- taxon[,1][which(apply(d.col, 1, function(x){length(which(x == 0))/lengt
 # replace 0 values with an estimated value (zCompositions package) this is slow
 d.bf <-cmultRepl(t(d.bf.0),  label=0)
 
-# acomp expects samples in rows
-bi <- acomp(d.bf)
-# No. corrected values:  944574
-# so we have to be careful interpreting this, we probably want to filter more aggressively
+# g full names with the last taxonomic name
+short_tax <- gsub(".+__", "", tax.0)
 
-#replace full names with the last taxonomic name
-names(bi) <- gsub(".+__", "", tax.0)
-
+# replace sample names with short ids
 com <- c(rep("T", length(grep("td_.", colnames(d.bf.0))) ),
 rep("B", length(grep("bm_", colnames(d.bf.0)))),
 rep("A", length(grep("ak_", colnames(d.bf.0)))),
@@ -56,7 +52,17 @@ rep("P", length(grep("pt_", colnames(d.bf.0)))),
 rep("S", length(grep("sa_", colnames(d.bf.0)))),
 rep("U", length(grep("up_", colnames(d.bf.0)))),
 rep("O", length(grep("op_", colnames(d.bf.0)))) )
+
+##########
+# this uses the princomp function as per the compositions package instructions
+
+# acomp expects samples in rows
+bi <- acomp(d.bf)
+# No. corrected values:  944574
+# so we have to be careful interpreting this, we probably want to filter more aggressively
+
 rownames(bi) <- com
+names(bi) <- short_tax
 
 pcx <- princomp(bi)
 
@@ -65,6 +71,31 @@ colnames(conds) <- "cond"
 
 palette=palette(c("red","cyan", "darkcyan", "darkblue", "green", "orange", "magenta", "yellow2"))
 coloredBiplot(pcx,col="black",cex=c(0.6,0.5), xlabs.col=conds$cond, arrow.len=0.05, var.axes=F, expand=0.9,  scale=0)
+sum(pcx$sdev[1]^2)/mvar(bi)
+sum(pcx$sdev[2]^2)/mvar(bi)
+sum(pcx$sdev[3]^2)/mvar(bi)
+
+#############
+
+#############
+# this uses the prcomp function that can be used for high-dimensional data ala MASS
+# in the mouth data, they are very similar
+
+dev.new()
+d.n0 <- cmultRepl(t(d.bf.0), label=0, method="CZM")
+
+d.n0.clr <- apply(d.n0, 2, function(x){log(x) - mean(log(x))})
+
+rownames(d.n0.clr) <- com
+colnames(d.n0.clr) <- gsub(".+__", "", tax.0)
+pc.clr <- prcomp(d.n0.clr)
+biplot(pc.clr, cex=c(0.5,0.5), scale=0, arrow.len=0, var.axes=F)
+coloredBiplot(pc.clr,col="black",cex=c(0.6,0.5), xlabs.col=conds$cond, arrow.len=0.05, var.axes=F, expand=0.9,  scale=0)
+sum(pc.clr$sdev[1]^2)/mvar(d.n0.clr)
+sum(pc.clr$sdev[2]^2)/mvar(d.n0.clr)
+sum(pc.clr$sdev[3]^2)/mvar(d.n0.clr)
+
+##############
 
 sum(pcx$sdev[1]^2)/mvar(bi)
 sum(pcx$sdev[2]^2)/mvar(bi)
