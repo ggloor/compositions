@@ -1,3 +1,10 @@
+---
+title: "Compositional analysis of the HMP oral dataset"
+author: "gg"
+date: "September 24, 2015"
+output: html_document
+---
+```{r, echo=TRUE, results='show', fig.width=8, fig.height=9, message=FALSE}
 library(ALDEx2)
 library(compositions)
 library(zCompositions)
@@ -24,21 +31,19 @@ taxon <- read.table("~/git/compositions/oral/data/taxon_names.txt", header=T, ro
 # mouth.n0 <- mouth[which(apply(mouth, 1, sum) > 0),]
 # all rows have at least one count! shit can't reduce this
 
+d <- data.frame(mouth[,grep("td_", colnames(mouth))], mouth[,grep("hp_", colnames(mouth))])
+d.col <- d[, which(apply(d,2,sum) > 1000)]
 # remove samples with < 1000 reads
 d.col <- mouth[, which(apply(mouth,2,sum) > 1000)]
 
 # First look at the entire mouth at the OTU level
 # reduce the dataset to those that are present in at least x% of the samples
 # have 1101 of 45383 OTUs left at 20%
-# samples are now in row, OTUs in columns
 
-# cutoff is X percent
-cutoff = 1-0.50
-d.bf.0 <- data.frame(d.col[which(apply(d.col, 1, function(x){length(which(x == 0))/length(x)}) < cutoff),])
-tax.0 <- taxon[,1][which(apply(d.col, 1, function(x){length(which(x == 0))/length(x)}) < cutoff)]
-
-# replace 0 values with an estimated value (zCompositions package) this is slow
-d.bf <-cmultRepl(t(d.bf.0),  label=0)
+# cutoff is a fraction of the reads that are not 0
+cutoff = .01
+d.bf.0 <- data.frame(d.col[which(apply(d.col, 1, function(x){length(which(x != 0))/length(x)}) > cutoff),])
+tax.0 <- taxon[,1][which(apply(d.col, 1, function(x){length(which(x != 0))/length(x)}) > cutoff)]
 
 # g full names with the last taxonomic name
 short_tax <- gsub(".+__", "", tax.0)
@@ -53,86 +58,38 @@ rep("S", length(grep("sa_", colnames(d.bf.0)))),
 rep("U", length(grep("up_", colnames(d.bf.0)))),
 rep("O", length(grep("op_", colnames(d.bf.0)))) )
 
-##########
-# this uses the princomp function as per the compositions package instructions
-# DON'T USE THIS
-
-# acomp expects samples in rows
-bi <- acomp(d.bf)
-# No. corrected values:  944574
-# so we have to be careful interpreting this, we probably want to filter more aggressively
-
-rownames(bi) <- com
-names(bi) <- short_tax
-
-pcx <- princomp(bi)
-
-conds <- data.frame(c(rep(1,length(grep("td_.", colnames(d.bf.0)))), rep(2, length(grep("bm_.", colnames(d.bf.0)))), rep(3, length(grep("ak_.", colnames(d.bf.0)))), rep(4, length(grep("hp_.", colnames(d.bf.0)))), rep(5, length(grep("pt_.", colnames(d.bf.0)))), rep(6, length(grep("sa_.", colnames(d.bf.0)))), rep(7, length(grep("up_.", colnames(d.bf.0)))), rep(8, length(grep("up_.", colnames(d.bf.0))))))
-colnames(conds) <- "cond"
-
-palette=palette(c("red","cyan", "darkcyan", "darkblue", "green", "orange", "magenta", "yellow2"))
-coloredBiplot(pcx,col="black",cex=c(0.6,0.5), xlabs.col=conds$cond, arrow.len=0.05, var.axes=F, expand=0.9,  scale=0)
-sum(pcx$sdev[1]^2)/mvar(bi)
-sum(pcx$sdev[2]^2)/mvar(bi)
-sum(pcx$sdev[3]^2)/mvar(bi)
-
-#############
-
 #############
 # this uses the prcomp function that can be used for high-dimensional data ala MASS
-# USE THIS
+# in the mouth data, the output is very similar to the output from the acomp and princomp functions
+# suggested in the compositions cookbook
+# however, the code is more general purpose because prcomp operates on the OTUs regardless if there
+# are more samples or more OTUs
 
-# in the mouth data, they are very similar
-conds <- data.frame(c(rep(1,length(grep("td_.", colnames(d.bf.0)))), rep(2, length(grep("bm_.", colnames(d.bf.0)))), rep(3, length(grep("ak_.", colnames(d.bf.0)))), rep(4, length(grep("hp_.", colnames(d.bf.0)))), rep(5, length(grep("pt_.", colnames(d.bf.0)))), rep(6, length(grep("sa_.", colnames(d.bf.0)))), rep(7, length(grep("up_.", colnames(d.bf.0)))), rep(8, length(grep("up_.", colnames(d.bf.0))))))
-colnames(conds) <- "cond"
+# replace 0 values with an estimated value (zCompositions package) this is slow
+# ask martin why I get different answers if output counts or proportions
+d.n0 <- cmultRepl(t(d.bf.0),  label=0, method="GBM")
+# samples are now in row, OTUs in columns
 
-palette=palette(c("red","cyan", "darkcyan", "darkblue", "green", "orange", "magenta", "yellow2"))
-
-d.n0 <- cmultRepl(t(d.bf.0), label=0, method="CZM")
-
-d.n0.clr <- t(apply(d.n0, 1, function(x){log(x) - mean(log(x))}))
+# centered log-ratio transform
+d.n0.clr <- apply(d.n0, 2, function(x){log(x) - mean(log(x))})
 
 rownames(d.n0.clr) <- com
 colnames(d.n0.clr) <- gsub(".+__", "", tax.0)
 pc.clr <- prcomp(d.n0.clr)
-#biplot(pc.clr, cex=c(0.5,0.5), scale=0, arrow.len=0, var.axes=F)
-coloredBiplot(pc.clr,col="black",cex=c(0.6,0.5), xlabs.col=conds$cond, arrow.len=0.05, var.axes=F, expand=0.9,  scale=0)
+
+#biplot(pc.clr, cex=c(0.3,0.5), scale=0, arrow.len=0, var.axes=F)
+
+conds <- data.frame(c(rep(1,length(grep("td_.", colnames(d.bf.0)))), rep(2, length(grep("bm_.", colnames(d.bf.0)))), rep(3, length(grep("ak_.", colnames(d.bf.0)))), rep(4, length(grep("hp_.", colnames(d.bf.0)))), rep(5, length(grep("pt_.", colnames(d.bf.0)))), rep(6, length(grep("sa_.", colnames(d.bf.0)))), rep(7, length(grep("up_.", colnames(d.bf.0)))), rep(8, length(grep("up_.", colnames(d.bf.0))))))
+colnames(conds) <- "cond"
+
+palette=palette(c("red","cyan", "darkcyan", "darkblue", "green", "orange", "magenta", "yellow2"))
+coloredBiplot(pc.clr,col=rgb(0,0,0,0.4),cex=c(0.3,0.25), xlabs.col=conds$cond, arrow.len=0.05, var.axes=T, expand=0.9,  scale=1)
 sum(pc.clr$sdev[1]^2)/mvar(d.n0.clr)
 sum(pc.clr$sdev[2]^2)/mvar(d.n0.clr)
 sum(pc.clr$sdev[3]^2)/mvar(d.n0.clr)
 
-#####
-# k-means clustering: http://www.statmethods.net/advstats/cluster.html
-mydata <- d.n0.clr
-wss <- (nrow(mydata) -1) * sum(apply(mydata,2,var))
-for (i in 2:15) wss[i] <- sum(kmeans(mydata,
-  	centers=i)$withinss)
-plot(1:15, wss, type="b", xlab="Number of Clusters", ylab="Within groups sum of squares")
-
-  mydata$fit.cluster <- NULL
-  fit <- kmeans(mydata, 3) # 5 cluster solution
-# get cluster means
-aggregate(mydata,by=list(fit$cluster),FUN=mean)
-# append cluster assignment
-mydata <- data.frame(mydata, fit$cluster)
-
-coloredBiplot(pc.clr,col=rgb(0,0,0,0.3),cex=c(0.6,0.5), xlabs.col=mydata$fit.cluster, arrow.len=0.05, var.axes=F, expand=0.9,  scale=0)
-
-# these packages mask the base packages needed above, so beware when loading and running
-
-library(cluster)
-library(fpc)
-
-# this generates a correspondence table between samples and clusters
-# fpc, cluster
-fit <- kmeans(mydata, 3)
-plotcluster(mydata, fit$cluster)
-
-# biplot like the colored biplot above, I like the colored biplot
-clusplot(mydata, fit$cluster, color=TRUE, shade=TRUE,
-  	labels=2, lines=0)
 ##############
-
+```
 sum(pcx$sdev[1]^2)/mvar(bi)
 sum(pcx$sdev[2]^2)/mvar(bi)
 sum(pcx$sdev[3]^2)/mvar(bi)

@@ -1,7 +1,9 @@
 # read in the entire dataset, this is the metadata
 # data files are in v35 download column of: http://hmpdacc.org/HMQCP/
+# you want row 10, v35 column ftp
 id <- read.table("v35_map_uniquebyPSN.txt", header=TRUE, sep="\t", row.names=1)
 
+# you want row 9, v35 column ftp
 # this is the raw otu table
 otu <- t( read.table("otu_table_psn_v35.txt", header=T, sep="\t", row.names=1) )
 rownames(otu) <- sub("^X", "", rownames(otu))
