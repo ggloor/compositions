@@ -6,19 +6,11 @@
 *.log
 *.gz
 *.toc
+*.tex
 figure
 
 
-brazil_comps.R
-
-introduction.tex
-
-making_brazil.r
-
-
-introduction.tex
-
-introduction.tex
+brazil/
 
 oral/data/mouth_otu.txt
 
