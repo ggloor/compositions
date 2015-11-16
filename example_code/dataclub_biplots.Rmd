@@ -24,7 +24,7 @@ how far it is from point A to point B. But there are many ways to measure it. Th
 
 ### Variance is also what we think it is:
 
- dispersion around some centre. But, in a multivarite dataset, the dispersion is not easy to visualize because we have as many dimensions as we have datapoints. Thus we have Principle Component Analysis (PCA), that identifies and displays the axes of variance in the data. An approachable introduction to this (best I've seen anyway) is at: https://www.ling.ohio-state.edu/~kbaker/pubs/Singular_Value_Decomposition_Tutorial.pdf. You should read and understand this as best you can.
+ dispersion around some centre. But, in a multivarite dataset, the dispersion is not easy to visualize because we have as many dimensions as we have datapoints. Thus we have Principal Component Analysis (PCA), that identifies and displays the axes of variance in the data. An approachable introduction to this (best I've seen anyway) is at: https://www.ling.ohio-state.edu/~kbaker/pubs/Singular_Value_Decomposition_Tutorial.pdf. You should read and understand this as best you can.
 
 Distance and variance are not represented well when we are dealing with proportional (or constant sum) data. Thus, we need to transform these data to ensure that we can get reasonable, reproducible estimates of these values. You should read one of my polemics on this, but be prepared to spend some time (We will send one around by email).
 
@@ -45,25 +45,32 @@ tax.0 <- d.bf.1$tax
 d.bf.1$tax <- NULL
 
 # keep only those samples with > 10000 reads
-# the which command returns a vector of numbers corresponding to the columns that have > 10000 reads. Try it on its own in the console
+# the which command returns a vector of numbers corresponding to the columns that have
+# > 10000 reads. Try it on its own in the console
 d.bf.0 <- d.bf.1[,which(apply(d.bf.1,2,sum) > 10000)]
 
 # simplify the dataset, by keeping only taxa present in x fraction of the samples
-# the which function returns a list of row numbers where the number of 0 values in the row is greater than the cutoff fraction
+# the which function returns a list of row numbers where the number of 0 values in the
+# row is greater than the cutoff fraction
 cutoff = .3
-d.subset <- data.frame(d.bf.0[which(apply(d.bf.0, 1, function(x){length(which(x != 0))/length(x)}) > cutoff),])
-tax.subset <- tax.0[which(apply(d.bf.0, 1, function(x){length(which(x != 0))/length(x)}) > cutoff)]
+d.subset <- data.frame(d.bf.0[which(apply(d.bf.0, 1,
+    function(x){length(which(x != 0))/length(x)}) > cutoff),])
+tax.subset <- tax.0[which(apply(d.bf.0, 1,
+    function(x){length(which(x != 0))/length(x)}) > cutoff)]
 
 # oh boy, so much here to explain
 # basically I am generating a shortened name for each OTU for display purposes
 # you could do this by hand if you don't know grep
 # two ways to substitute row and column labels
-# gsub replaces any number of characters denoted by the "." that are followed by two underscores with nothing from the list of taxa names in the reduced dataset
+# gsub replaces any number of characters denoted by the "." that are followed by
+# two underscores with nothing from the list of taxa names in the reduced dataset
+
 short_tax <- gsub(".+__", "", tax.subset)
 
 # com is being assigned a vector of values where the "T" is replicated the number of times
 # that we observe td_ in the column names of the reduced data subset
-com <- c(rep("T", length(grep("td_.", colnames(d.subset))) ),rep("B", length(grep("bm_.", colnames(d.subset))) ))
+com <- c(rep("T", length(grep("td_.", colnames(d.subset))) ),
+    rep("B", length(grep("bm_.", colnames(d.subset))) ))
 
 ```
 Herein ends the data munging. In the end we are left with `r nrow(d.subset)`  OTUs and \r ncol(d.subset)` samples. This is just for convenience, and the second example contains many more.
@@ -99,7 +106,8 @@ At this point we have our data in a matrix, with rownames being samples and colu
 Instructions for interpreting these are in Figure 8 and discussion of 'introduction_to_compositions.pdf' on the course github site.
 
 ```{r}
-conds <- data.frame(c(rep(1,length(grep("td_", colnames(d.bf.0)))), rep(2, length(grep("bm_", colnames(d.bf.0))))))
+conds <- data.frame(c(rep(1,length(grep("td_", colnames(d.bf.0)))),
+    rep(2, length(grep("bm_", colnames(d.bf.0))))))
 colnames(conds) <- "cond"
 
 # this is the key function that performs the calculations
@@ -107,14 +115,18 @@ pcx <- prcomp(d.n0.clr)
 mvar.clr <- mvar(d.n0.clr)
 
 # the scree plot
-plot((pcx$sdev^2/mvar(d.n0.clr))[1:10], type="b", xlab="Factor", ylab="Explained variance")
+plot((pcx$sdev^2/mvar(d.n0.clr))[1:10], type="b", xlab="Factor",
+    ylab="Explained variance")
 ```
 The biplot attempts to project a multimensional object (our dataset) onto two dimensions. Examining biplots is kind of like Plato's cave, where we can only determine how something looks by examining its shadow on a wall (except we have more than three dimensions in our data). We can examine the scree plot to tell us how well the projection represents the reality of our data. The more variance explained in the first two dimensions, the better the represention. In our case, we are explaining a proportion of `r round(sum(pcx$sdev[1]^2)/mvar.clr, 3) + round(sum(pcx$sdev[2]^2)/mvar.clr, 3)` in the first two dimensions, indicating a good projection for such a large dataset. In addition, examination of the plot shows that there is a large difference between Factor 1-2, and 2-3, and that later factors have very small sequential differences.
 
 ### The form compositional  biplot.
 ```{r}
 par(mfrow=c(1,1))
-coloredBiplot(pcx,col=rgb(0,0,0,0.2),cex=c(0.8,0.4), xlabs.col=conds$cond, var.axes=F, arrow.len=0.05, xlab=paste("PC1: ", round(sum(pcx$sdev[1]^2)/mvar.clr, 3), sep=""), ylab=paste("PC2: ", round(sum(pcx$sdev[2]^2)/mvar.clr, 3), sep=""), scale=0)
+coloredBiplot(pcx,col=rgb(0,0,0,0.2),cex=c(0.8,0.4), xlabs.col=conds$cond,
+    var.axes=F, arrow.len=0.05,
+    xlab=paste("PC1: ", round(sum(pcx$sdev[1]^2)/mvar.clr, 3), sep=""),
+    ylab=paste("PC2: ", round(sum(pcx$sdev[2]^2)/mvar.clr, 3), sep=""), scale=0)
 
 ```
 This is a form biplot that best (given the quality of the projection) represents the distance relationships between samples. This is set with scale=0.  In addition, the length of a ray drawn from the center to a taxon represents how well the variation of that taxon is represented. If the length is 1, then we have a perfect representation. None of our rays are much over 0.3, so there is a lot of noise in these data. Here we can see that the T and B samples separate quite well on component 1, or the major axis. This is what we want to see.
@@ -122,7 +134,10 @@ This is a form biplot that best (given the quality of the projection) represents
 ### The covariance compositional  biplot.
 ```{r}
 par(mfrow=c(1,1))
-coloredBiplot(pcx,col=rgb(0,0,0,0.2),cex=c(0.8,0.4), xlabs.col=conds$cond, var.axes=F, arrow.len=0.05, xlab=paste("PC1: ", round(sum(pcx$sdev[1]^2)/mvar.clr, 3), sep=""), ylab=paste("PC2: ", round(sum(pcx$sdev[2]^2)/mvar.clr, 3), sep=""), scale=1)
+coloredBiplot(pcx,col=rgb(0,0,0,0.2),cex=c(0.8,0.4),
+    xlabs.col=conds$cond, var.axes=F, arrow.len=0.05,
+    xlab=paste("PC1: ", round(sum(pcx$sdev[1]^2)/mvar.clr, 3), sep=""),
+    ylab=paste("PC2: ", round(sum(pcx$sdev[2]^2)/mvar.clr, 3), sep=""), scale=1)
 
 ```
 This is a covariance biplot that best represents the variance relationships between OTUs. This is set with scale=1. The basic rule for a covariance biplot is that length and direction of each OTU is proportional to the standard deviation of the OTU in the dataset (given the quality of the projection). This allows us to determine how the OTUs variation affects the partitioning of the samples. In addition, the cosine of the angle between two arrows drawn from the center to two taxa approximates the correlation between those two taxa. So the two Porphyromonas in the bottom right that are essentially on top of each other should have a strong correlation.
@@ -136,7 +151,8 @@ You should explore how each clustering and distance metric changes the clusterin
 ```{r}
 
 # we are doing Euclidian distance (the default) on the log-ratio values
-# the log-ratio values are linearly different, which is required for accurate use of Euclidian distance
+# the log-ratio values are linearly different, which is required for accurate
+# use of Euclidian distance
 # this is called an Aitchison distance (by some) and is the valid way to determine
 # distance for compositional data
 
@@ -152,7 +168,7 @@ Here we can see that most B and T samples separate very well. There are a few B 
 ### k-means clustering
 
 k-means clustering is somewhat non-deterministic. Here the middle of a group is estimated randomly, and the center and group membership is iteratively approached. This means that group membership can change from one trial to another, and that we should not get hung up on trying to chase small effects, because the results can change if the effect is small.
-```{r}
+```{r, warning=FALSE, message=FALSE}
 #palette <- old.palette
 mydata <- as.data.frame(d.n0.clr)
 # calculate the within group sum of squares
