@@ -1,10 +1,20 @@
-# read in the entire dataset, this is the metadata
-# data files are in v35 download column of: http://hmpdacc.org/HMQCP/
-# you want row 10, v35 column ftp
-id <- read.table("v35_map_uniquebyPSN.txt", header=TRUE, sep="\t", row.names=1)
+##########
+#
+# This is provided to show where the raw data can be obtained and was current as of
+# Oct 22, 2015. The data that is used in the paper is a subset of this entire
+# dataset, and was sub-setted into a manageable comparison. The major issue is the time
+# needed to load the data into R
+#
+# It is not expected that the entire dataset will be downloaded and this code
+# is for information and transparency.
 
-# you want row 9, v35 column ftp
+# this is the metadata
+# data files are in v35 download column from the following website: http://hmpdacc.org/HMQCP/
+# ftp://public-ftp.hmpdacc.org/HMQCP/v35_map_uniquebyPSN.txt.bz2
+#id <- read.table("v35_map_uniquebyPSN.txt", header=TRUE, sep="\t", row.names=1)
+
 # this is the raw otu table
+# ftp://public-ftp.hmpdacc.org/HMQCP/otu_table_psn_v35.txt.gz
 otu <- t( read.table("otu_table_psn_v35.txt", header=T, sep="\t", row.names=1) )
 rownames(otu) <- sub("^X", "", rownames(otu))
 
