@@ -3,7 +3,7 @@ title: "Biplots and clustering"
 author: "gg"
 date: "`r Sys.Date()`"
 fig_caption: true
-output: html_document
+output: pdf_document
 caption: test
 ---
 
