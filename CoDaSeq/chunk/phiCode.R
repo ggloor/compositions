@@ -74,7 +74,7 @@ d.n0.sma.df$r2 <- d.n0.sma$r2[lt]
 d.n0.sma.df$phi <- d.n0.sym.phi[lt]
 
 # find the set of connections with phi less than some value
-phi.cutoff <- 0.1
+# phi.cutoff <- 0.1
 d.n0.sma.lo.phi <- subset(d.n0.sma.df, phi < phi.cutoff)
 
 # generate a graphical object

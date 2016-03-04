@@ -1,4 +1,4 @@
-This is an attempt to put together a complete suite of functions for CoDa analysis of microbiome data
+This is an attempt to put together a complete suite of functions for CoDa analysis of microbiome, transcriptome and metagenome data
 
 The code here is in the form of an R markdown document.
 
