@@ -1,9 +1,9 @@
-## ---- setup ----
+# ---- setup ----
 
 # we need these libraries for the colored biplot, and for the 0 replacement function
 library(compositions)
 library(zCompositions)
-source("chunk/codaMB_functions.R") # commonly used functions
+source("chunk/codaSeq_functions.R") # commonly used functions
 
 # read the table, with column and row names, columns tab delimited
 # samples are by column, variables are by row
@@ -24,7 +24,7 @@ min.prop = 0.01
 cutoff = .3
 
 # using function in codaMB_functions.R
-d.subset <- codamb.filter(d.bf.1, min.reads=min.reads, min.fraction=cutoff, min.prop=min.prop,
+d.subset <- codaSeq.filter(d.bf.1, min.reads=min.reads, min.fraction=cutoff, min.prop=min.prop,
     samples.by.row=FALSE)
 
 tax.subset <- as.data.frame(tax.0[rownames(tax.0) %in% rownames(d.subset),])

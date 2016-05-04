@@ -1,10 +1,10 @@
 # I have placed this script in the directory
 # change the path accordingly
-source("~/git/proprBayes/R/propr-functions.R")
+source("~/git/propr/R/propr-functions.R")
 library(igraph)
 
 ###########
-# these are functins that you will need. Copy and paste into the console
+# these are functions that you will need. Copy and paste into the console
 
 sma.df <- function(df){
 df.cor <- stats::cor(df, use="pairwise.complete.obs")
