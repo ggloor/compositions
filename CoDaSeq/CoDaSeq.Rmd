@@ -2,13 +2,12 @@
 title: "A primer for compositional analysis of microbiome data"
 author: "gg"
 date: "`r Sys.Date()`"
-fig_caption: true
+fig_caption: TRUE
 output: pdf_document
 caption: test
 ---
 
-To run this file:
-Rscript -e "rmarkdown::render('biplots.Rmd')"
+To run this file: # Rscript -e "rmarkdown::render('CoDaseq.Rmd')"
 
 you will need the rmarkdown and knitr packages installed from CRAN.
 
@@ -28,13 +27,13 @@ Distance is the building block for clustering, where the idea is to show the rel
 
  dispersion around some centre. But, in a multivarite dataset, the dispersion is not easy to visualize because we have as many dimensions as we have datapoints. Thus we have Principal Component Analysis (PCA), that identifies and displays the axes of variance in the data. An approachable introduction to this (best I've seen anyway) is at: https://www.ling.ohio-state.edu/~kbaker/pubs/Singular_Value_Decomposition_Tutorial.pdf. You should read and understand this as best you can.
 
-Distance and variance are not represented well when we are dealing with proportional (or constant sum) data. Thus, we need to transform these data to ensure that we can get reasonable, reproducible estimates of these values. You should read one of my polemics on this, but be prepared to spend some time (We will send one around by email).
+Distance and variance are not represented well when we are dealing with proportional (or constant sum) data. Thus, we need to transform these data to ensure that we can get reasonable, reproducible estimates of these values. You should read one of my polemics on this, but be prepared to spend some time (try https://github.com/ggloor/compositions/tree/master/background_reading Gloor et al. Workshop_report_R1.docx).
 
-Now for some code. I have put up a dataset composed of a subset of the Human Microbiome project oral 16S rRNA gene survey dataset on github. The first chunk is just a lot of plumbing. It is here for reference. To use this you will need to get the table tongue_vs_cheek.txt from github and put it in the same directory as the .Rmd document.
+Now for some code. I have put up a dataset composed of a subset of the Human Microbiome project oral 16S rRNA gene sequencing survey dataset on github. The first chunk is just a lot of plumbing. It is here for reference. To use this you will need to get the table tongue_vs_cheek.txt from github and put it in the same directory as the .Rmd document.
 
-```{r setup, echo=TRUE, message=FALSE}
-source("chunk/setup.R")
+```{r,code=readLines('chunk/setup.R'), eval=TRUE, message=FALSE, warning=FALSE}
 ```
+
 Herein ends the data munging. I first reduced the dataset to those samples with at least `r min.reads` reads, and then removed all OTUs that were present at an abundance less than `r min.prop`  in all samples and that were represented in less than `r cutoff` as a proportion of the samples. In the end we are left with `r nrow(d.subset)`  OTUs and `r ncol(d.subset)` samples. This is just for convenience because it removes samples and OTUs with little data. Such samples and OTUs add little to the analysis because their values are estimated poorly.
 
 
@@ -49,12 +48,12 @@ You will need to alter these commands to get your dataset into shape for the ana
 # we can use the GBM or CZM methods. Function from zCompositions
 d.n0 <- cmultRepl(t(d.subset),  label=0, method="CZM", output="counts")
 
-# convert everything to log-ratios. Function from codaMB
+# convert everything to log-ratios. Function from codaSeq
 # equivalent to log(x/gx) for every value where gx is the geomtric mean of the vector X
 # I prefer to use log to the base 2, although purists disagree.
 # For the purposes of these plots and analyses there is no
 # effect of the base on the results.
-d.n0.clr <- codamb.clr(d.n0, samples.by.row=TRUE)
+d.n0.clr <- codaSeq.clr(d.n0, samples.by.row=TRUE)
 
 # replace row and column names for display
 # this only works because we now have a matrix, not a dataframe
@@ -75,8 +74,8 @@ group.B <- d.n0.clr[which(rownames(d.n0.clr) == "B"),]
 group.T <- d.n0.clr[which(rownames(d.n0.clr) == "T"),]
 
 # get proportional variance per sample in each group
-pvar.B <- codamb.outlier(group.B)
-pvar.T <- codamb.outlier(group.T)
+pvar.B <- codaSeq.outlier(group.B)
+pvar.T <- codaSeq.outlier(group.T)
 
 # density plot of the variance of each sample as a function
 # of the total variance of the group identifies outliers
@@ -99,8 +98,9 @@ Uncovering correlation within compositional datasets is extremely tricky because
 
 Lovell et al. showed that  variables (OTUs) that have nearly constant ratios in all samples are by definition are highly correlated. They also demonstrate that the converse is not true. The phi statistic identifies those OTUs where the var(clr(x)/clr(y)) is essentially constant across samples. This method requires the propr-functions.R set of functions. The data can be explored using graphical approaches, and the code below illustrates how to retrieve the desired information from the graphs.
 
-```{r phi, echo=TRUE, message=FALSE, warning=FALSE}
-source("chunk/phiCode.R")
+we will use a cutoff of `r phi.cutoff=0.1` for this analysis.
+
+```{r code=readLines('chunk/phiCode.R'), echo=TRUE, message=FALSE, warning=FALSE}
 ```
 Here we see a plot of all OTU clusters with phi <= `r phi.cutoff` in the dataset. The cutoff of 0.05 used in Lovell's paper gave only single pairs so I upped the cutoff a bit: probably needed to do this because the dataset is very noisy compared to the RNA-seq dataset used by Lovell. 16S rRNA gene sequencing datasets have much greater variance and so less power than do RNA-seq datasets (Fernandes 2014). We can explore this grouping a bit, and see that there are two distinct clusters for Gemella in the data. The members of the first group can be found with the following commands:
 
@@ -297,7 +297,7 @@ The number of discriminatory functions is the lesser of the number of groups -1,
 ```{r lda, echo=TRUE}
 # this is from the MASS package loaded by compositions
 # remake the clr dataset as a dataframe
-myData <- data.frame(d.n0.clr <- codamb.clr(d.n0, samples.by.row=TRUE) )
+myData <- data.frame(d.n0.clr <- codaSeq.clr(d.n0, samples.by.row=TRUE) )
 colnames(myData) <- rownames(d.subset)
 
 # com is the vector of B or T names
