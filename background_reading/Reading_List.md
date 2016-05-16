@@ -14,7 +14,7 @@ Van den Boogaart, K Gerald and Tolosana-Delgado, Raimon. Analyzing compositional
 
 Aitchison, John and Greenacre, Michael. Biplots of compositional data (2002). Journal of the Royal Statistical Society: Series C, 51:375
 
-Recent papers:
+##Recent papers:
 
 Friedman, Jonathan and Alm, Eric J. Inferring correlation networks from genomic survey data (2012)
 PLoS Comput Biol. 8:e1002687
@@ -47,7 +47,7 @@ Annals. Epidemiology: In Press (doi:10.1016/j.annepidem.2016.03.003)
 
 ##A few applications
 
-Macklaim, M Jean and Fernandes, D Andrew and Di Bella, M Julia and Hammond, Jo-Anne and Reid ,Gregor and Gloor, Gregory B. 
+Macklaim, M Jean and Fernandes, D Andrew and Di Bella, M Julia and Hammond, Jo-Anne and Reid ,Gregor and Gloor, Gregory B.
 Comparative meta-{RNA}-seq of the vaginal microbiota and differential expression by \textit{{L}actobacillus iners} in health and dysbiosis (2013)
 Microbiome 1:15
 
