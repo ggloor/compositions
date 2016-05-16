@@ -1,4 +1,4 @@
-CoDaMicro contains the complete suite of code for biplots, differential abundance and proportionality (phi, "correlation")
+#CoDaMicro contains the complete suite of code for biplots, differential abundance and proportionality (phi, "correlation")
 
 background reading contains background reading relevant to compositional analysis.
 
