@@ -16,39 +16,43 @@ Aitchison, John and Greenacre, Michael. Biplots of compositional data (2002). Jo
 
 ##Recent papers:
 
-Friedman, Jonathan and Alm, Eric J. Inferring correlation networks from genomic survey data (2012)
-PLoS Comput Biol. 8:e1002687
+Gloor, Gregory B and Wu, Jia Rong and Pawlowsky-Glahn, Vera and Egozcue, Juan José
+It's all relative: analyzing microbiome data as compositions (2016)
+Annals. Epidemiology: May;26(5):322-9 (http://dx.doi.org:10.1016/j.annepidem.2016.03.003)
+(A full worked example and code)
 
-Fernandes, A. D. and Macklaim, J. M. and Linn, T.G and Reid, G. and Gloor, G. B.
-{ANOVA}-Like Differential Expression ({ALDEx}) Analysis for Mixed Population {RNA}-Seq (2013). PLoS ONE: 8:e67019
-
-Fernandes, Andrew D and Reid, Jennifer Ns and Macklaim, Jean M and McMurrough, Thomas A and Edgell, David R and Gloor, Gregory B
-Unifying the analysis of high-throughput sequencing datasets: characterizing {RNA}-seq, 16S r{RNA} gene sequencing and selective growth experiments by compositional data analysis (2014)
-Microbiome, 2:15.1
-
-Lovell, David and Pawlowsky-Glahn, Vera and Egozcue, Juan José and Marguerat, Samuel and Bähler, Jürg
-Proportionality: a valid alternative to correlation for relative data (2015)
-PLoS Comput Biol, 11:e1004075
-
-Gregory B. Gloor and Jean M. Macklaim and Andrew D. Fernandes
-Displaying Variation in Large Datasets: a Visual Summary of Effect Sizes (2016)
-Journal of Computational and Graphical Statistics, in press (DOI:10.1080/10618600.2015.1131161)
+Gloor, G. B. and Reid ,Gregor. Compositional analysis: a valid approach to analyze microbiome high throughput sequencing data (2016)
+Can J Microbiol: In press (http://dx.doi.org/10.1139/cjm-2015-0821) (A full worked example and code)
 
 Gloor, Gregory B and Macklaim, Jean M and Vu, Michael and Fernandes, Andrew D
 Compositional uncertainty should not be ignored in high-throughput sequencing data analysis (2016)
-Aus. J. Statistics: In press
+Aus. J. Statistics: In press (direct request) (A more formal treatment of the uncertainty problem and one way around it)
 
-Gloor, G. B. and Reid ,Gregor. Compositional analysis: a valid approach to analyze microbiome high throughput sequencing data (2016)
-Can J Microbiol: In press (http://dx.doi.org/10.1139/cjm-2015-0821)
+Gregory B. Gloor and Jean M. Macklaim and Andrew D. Fernandes
+Displaying Variation in Large Datasets: a Visual Summary of Effect Sizes (2016)
+Journal of Computational and Graphical Statistics, in press (http://dx.doi.org:10.1080/10618600.2015.1131161)
+(A new way to visualize high-dimensional data as an effect plot)
 
-Gloor, Gregory B and Wu, Jia Rong and Pawlowsky-Glahn, Vera and Egozcue, Juan José
-It's all relative: analyzing microbiome data as compositions (2016)
-Annals. Epidemiology: In Press (doi:10.1016/j.annepidem.2016.03.003)
+Lovell, David and Pawlowsky-Glahn, Vera and Egozcue, Juan José and Marguerat, Samuel and Bähler, Jürg
+Proportionality: a valid alternative to correlation for relative data (2015)
+PLoS Comput Biol, 11:e1004075 (Nicely illustrates the problems and a general solution to the correlation problem)
+
+Fernandes, Andrew D and Reid, Jennifer Ns and Macklaim, Jean M and McMurrough, Thomas A and Edgell, David R and Gloor, Gregory B
+Unifying the analysis of high-throughput sequencing datasets: characterizing {RNA}-seq, 16S r{RNA} gene sequencing and selective growth experiments by compositional data analysis (2014)
+Microbiome, 2:15.1 (The first paper showing that essentially all high throughput data are compositional)
+
+Fernandes, A. D. and Macklaim, J. M. and Linn, T.G and Reid, G. and Gloor, G. B.
+{ANOVA}-Like Differential Expression ({ALDEx}) Analysis for Mixed Population {RNA}-Seq (2013). PLoS ONE: 8:e67019
+(One of the first papers to point out compositional problems in RNA-seq data)
+
+Friedman, Jonathan and Alm, Eric J. Inferring correlation networks from genomic survey data (2012)
+PLoS Comput Biol. 8:e1002687 (The first paper to point out compositional problems in microbiome data)
+
 
 ##A few applications
 
 Macklaim, M Jean and Fernandes, D Andrew and Di Bella, M Julia and Hammond, Jo-Anne and Reid ,Gregor and Gloor, Gregory B.
-Comparative meta-{RNA}-seq of the vaginal microbiota and differential expression by \textit{{L}actobacillus iners} in health and dysbiosis (2013)
+Comparative meta-RNA-seq of the vaginal microbiota and differential expression by Lactobacillus iners in health and dysbiosis (2013)
 Microbiome 1:15
 
 McMurrough, Thomas A and Dickson, Russell J and Thibert, Stephanie M F and Gloor, Gregory B and Edgell, David R. Control of catalytic efficiency by a coevolving network of catalytic and noncatalytic residues (2014)
