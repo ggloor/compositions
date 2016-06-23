@@ -21,6 +21,7 @@ CJM_Supplement/
 
 background_reading/cjm-2015-0821_proof.pdf
 
-presentations/Epi_2016_CoDaSeq.ppt
+presentations/*.png
+presentations/*.pdf
+presentations/*.R
 
-presentations/nafld_papers.png
