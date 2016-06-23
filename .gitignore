@@ -22,6 +22,12 @@ CJM_Supplement/
 background_reading/cjm-2015-0821_proof.pdf
 
 presentations/*.png
-presentations/*.pdf
-presentations/*.R
+presentations/effect.pdf
+presentations/biplot.pdf
+presentations/biplot.png
+presentations/effect.pdf
+presentations/phi.pdf
+presentations/tc_biplot.pdf
+
+presentations/R_log.R
 
