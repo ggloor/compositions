@@ -30,7 +30,7 @@ Aus. J. Statistics: In press (direct request) (A more formal treatment of the un
 
 Gregory B. Gloor and Jean M. Macklaim and Andrew D. Fernandes
 Displaying Variation in Large Datasets: a Visual Summary of Effect Sizes (2016)
-Journal of Computational and Graphical Statistics, in press (http://dx.doi.org:10.1080/10618600.2015.1131161)
+Journal of Computational and Graphical Statistics, in press (http://dx.doi.org/10.1080/10618600.2015.1131161)
 (A new way to visualize high-dimensional data as an effect plot)
 
 Lovell, David and Pawlowsky-Glahn, Vera and Egozcue, Juan José and Marguerat, Samuel and Bähler, Jürg
@@ -38,7 +38,7 @@ Proportionality: a valid alternative to correlation for relative data (2015)
 PLoS Comput Biol, 11:e1004075 (Nicely illustrates the problems and a general solution to the correlation problem)
 
 Fernandes, Andrew D and Reid, Jennifer Ns and Macklaim, Jean M and McMurrough, Thomas A and Edgell, David R and Gloor, Gregory B
-Unifying the analysis of high-throughput sequencing datasets: characterizing {RNA}-seq, 16S r{RNA} gene sequencing and selective growth experiments by compositional data analysis (2014)
+Unifying the analysis of high-throughput sequencing datasets: characterizing RNA-seq, 16S rRNA gene sequencing and selective growth experiments by compositional data analysis (2014)
 Microbiome, 2:15.1 (The first paper showing that essentially all high throughput data are compositional)
 
 Fernandes, A. D. and Macklaim, J. M. and Linn, T.G and Reid, G. and Gloor, G. B.
