@@ -42,7 +42,7 @@ Unifying the analysis of high-throughput sequencing datasets: characterizing RNA
 Microbiome, 2:15.1 (The first paper showing that essentially all high throughput data are compositional)
 
 Fernandes, A. D. and Macklaim, J. M. and Linn, T.G and Reid, G. and Gloor, G. B.
-{ANOVA}-Like Differential Expression ({ALDEx}) Analysis for Mixed Population {RNA}-Seq (2013). PLoS ONE: 8:e67019
+ANOVA-Like Differential Expression (ALDEx) Analysis for Mixed Population RNA-Seq (2013). PLoS ONE: 8:e67019
 (One of the first papers to point out compositional problems in RNA-seq data)
 
 Friedman, Jonathan and Alm, Eric J. Inferring correlation networks from genomic survey data (2012)
