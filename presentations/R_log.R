@@ -75,6 +75,7 @@ palette=palette(c("red","darkcyan", "cyan", "darkblue",
 # End biplot plumbing
 ####
 
+
 ####
 # Start logratio and biplot functions
 ####
