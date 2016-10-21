@@ -27,11 +27,11 @@ Annals. Epidemiology: May;26(5):322-9 (http://dx.doi.org:10.1016/j.annepidem.201
 (A full worked example and code)
 
 Gloor, G. B. and Reid ,Gregor. Compositional analysis: a valid approach to analyze microbiome high throughput sequencing data (2016)
-Can J Microbiol: In press (http://dx.doi.org/10.1139/cjm-2015-0821) (A full worked example and code)
+Can J Microbiol, 62(8):692–703 (http://dx.doi.org/10.1139/cjm-2015-0821) (A full worked example and code)
 
 Gloor, Gregory B and Macklaim, Jean M and Vu, Michael and Fernandes, Andrew D
 Compositional uncertainty should not be ignored in high-throughput sequencing data analysis (2016)
-Aus. J. Statistics: In press (direct request) (A more formal treatment of the uncertainty problem and one way around it)
+Austrian Journal of Statistics, 45:73–87, September 2016. (A more formal treatment of the uncertainty problem and one way around it)
 
 Lovell, David and Pawlowsky-Glahn, Vera and Egozcue, Juan José and Marguerat, Samuel and Bähler, Jürg
 Proportionality: a valid alternative to correlation for relative data (2015)
