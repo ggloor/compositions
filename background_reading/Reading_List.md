@@ -23,7 +23,7 @@ Aitchison, John and Greenacre, Michael. Biplots of compositional data (2002). Jo
 
 Gloor, Gregory B and Wu, Jia Rong and Pawlowsky-Glahn, Vera and Egozcue, Juan José
 It's all relative: analyzing microbiome data as compositions (2016)
-Annals. Epidemiology: May;26(5):322-9 (http://dx.doi.org:10.1016/j.annepidem.2016.03.003)
+Annals. Epidemiology: May;26(5):322-9 (http://dx.doi.org/10.1016/j.annepidem.2016.03.003)
 (A full worked example and code)
 
 Gloor, G. B. and Reid ,Gregor. Compositional analysis: a valid approach to analyze microbiome high throughput sequencing data (2016)
