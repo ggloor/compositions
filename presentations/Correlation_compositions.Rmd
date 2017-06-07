@@ -1,0 +1,402 @@
+---
+title: "Compositionally appropriate linear association in high throughput sequencing data"
+author: "Greg Gloor"
+date: "May 17, 2017"
+output:
+    beamer_presentation:
+        fig_width: 4
+        fig_height: 3
+---
+
+```{r, echo=F}
+# in theory
+# R -e "rmarkdown::render('Correlation_compositions.Rmd')"
+library(knitr)
+
+opts_chunk$set(dev = 'pdf')
+```
+
+# The problem of spurious correlation \tiny{Pearson, 1897}
+
+Spurious correlation arises when data are constrained by a constant denominator, or equivalently, by a constant sum
+
+"If $u=f_1(x,y)$ and $v=f_2(z,y)$ be two functions of the three variables $x,y,z$, and these variables be selected at random so there exists no correlation between $x,z$, $y,z$, or $z,x$, there will still be found to exist correlation between $u$ and $v$. Thus a real danger arises when a statistical biologist attributes the correlation between two functions like $u$ and $v$ to organic relationship $\ldots$ ." Pearson 1897
+
+### This problem exists whenever there is a constant denominator in a dataset: proportion, percentage, ppm, normalized counts, reads/sequencing depth, etc.  Sequencing data are constrained by this problem.
+
+----
+
+# Relationship to HTS
+
+\begin{center}
+\includegraphics[width=4in]{/Users/ggloor/Documents/0_git/working_papers/CoDa_OnePg/simple_figure.pdf}
+\end{center}
+
+----
+
+```{r, eval=T, echo=F, results="asis"}
+s1 <- c(1,2,2,5,5)
+s2 <- c(1.5,4,3,2,20)
+s3 <- c(2,8,1,3,1.5)
+s <- rbind(s1,s2,s3)
+colnames(s) <- c("A", "B", "C", "D", "E")
+
+cor.s <- cor(s, method="spearman")
+
+s.p <- t(apply(s, 1, function(x) x/sum(x)))
+cor.s.p <- cor(s.p, method="spearman")
+
+s.p2 <- t(apply(s[,1:4], 1, function(x) x/sum(x)))
+cor.s.p2 <- cor(s.p, method="spearman")
+
+```
+
+# Numbers vs. proportions
+
+\scriptsize
+Numbers
+
+|     | A   |  B  |  C  |  D |   E |
+|-----|----:|----:|----:|---:|---:|
+|  S1 | 10  | 20  |  20 |  50  | 50 |
+|  S2 | 15  | 40  |  30 | 20  | 200 |
+|  S3 | 20  | 80  |  10 |  30 | 15 |
+
+Proportions (A-E)
+
+|     | A   |  B  |  C  |  D |   E |
+|-----|----:|----:|----:|---:|---:|
+|  S1 | .067| .133| .133|  .333| .333|
+|  S2 | .049| .131| .098|  .066| .656|
+|  S3 | .129| .516| .065|  .194| .097|
+
+Proportions (A-D)
+
+|     | A   |  B  |  C  |  D |
+|-----|----:|----:|----:|---:|
+|  S1 | .100| .200| .200 |  .500|
+|  S2 | .143| .381|  .286|  .190|
+|  S3 | .143| .571|  .071|  .214|
+
+```{r, echo=F, message=F, error=F, warning=F}
+#print(s)
+#print(round(s.p, 3))
+#print(round(s.p2,3))
+```
+----
+
+# Spurious correlation in action \tiny{Aitchison 1986}
+
+## Fake Correlations! Sad!
+
+
+
+Plots of A vs. D in each situation
+
+```{r, echo=F, fig.width=7, fig.height=2.8}
+
+par(mfrow=c(1,3))
+#plot(s[,1],s[,2], xlab= "A", ylab="B", pch=19,cex=2, col="blue", main="Sp. cor. = 1\nPn cor. = .98")
+#plot(s[,1],s[,3], xlab= "A", ylab="C", pch=19,cex=2, col="blue", main="Sp. cor. = -0.5\nPn cor. = -.5")
+plot(s[,1],s[,4], xlab= "A", ylab="D", pch=19,cex=2, col="blue", main="Numbers\nSp. cor. = -0.5, Pn cor. = -.5")
+#plot(s[,1],s[,5], xlab= "A", ylab="E", pch=19,cex=2, col="blue", main="Sp. cor. = -0.5\nPn cor. = -.17")
+
+#plot(s.p[,1],s.p[,2], xlab= "A", ylab="B", pch=19,cex=2, col="red", main="Sp. cor. = 1 Pn cor = .97")
+#plot(s.p[,1],s.p[,3], xlab= "A", ylab="C", pch=19,cex=2, col="red", main="Sp. cor. = -0.5 Pn cor = -.64")
+plot(s.p[,1],s.p[,4], xlab= "A", ylab="D", pch=19,cex=2, col="red", main="Prop A-E\nSp. cor. = 0.5, Pn cor = .36")
+#plot(s.p[,1],s.p[,5], xlab= "A", ylab="E", pch=19,cex=2, col="red", main="Sp. cor. = -1 Pn cor = -.96")
+
+
+#plot(s.p2[,1],s.p2[,2], xlab= "A", ylab="B", pch=19,cex=2, col="orange", main="Sp. cor. = .87 Pn cor = .84")
+#plot(s.p2[,1],s.p2[,3], xlab= "A", ylab="C", pch=19,cex=2, col="orange", main="Sp. cor. = 0 Pn cor = -.23")
+plot(s.p2[,1],s.p2[,4], xlab= "A", ylab="D", pch=19,cex=2, col="orange", main="Prop A-D\nSp. cor. = -.87, Pn cor = -.99")
+
+```
+
+What can you trust?
+
+----
+
+# Correlation is not stable
+
+The correlation observed is not the same for the numerical and proportional data
+
+The correlation changes again when the proportional data are subset
+
+\textbf{this is spurious correlation} and is an unpredictable correlation observed between two variables whenever they share a common denominator, whether correlated or not with either or both of the two variables.
+
+We usually think of correlations as linear relationships of the type $y=m x + b$
+
+----
+
+# Unfair blue and unfair red coin \tiny{Pawlowsky-Glahn, 2015}
+
+```{r, echo=F,fig.height=5, fig.width=5}
+# Ratio information
+
+par(mfrow=c(1,1))
+plot(3,2, xlim=c(0,3.1), ylim=c(0,3.1), xlab="Heads", ylab="Tails", xaxs="i", yaxs="i", col=rgb(0,0,1,0.5), pch=19,cex=2, xaxt="n", yaxt="n")
+points(1.5,1, col=rgb(0,0,1,0.5), pch=19,cex=2)
+points(2,3, col=rgb(1,0,0,0.5), pch=19,cex=2)
+
+rn <- runif(100,min=1.5,max=6)
+rny <- 2/5 * rn
+rnx <- 3/5 * rn
+points(rnx * runif(100, min=0.95, max=1.05),rny*runif(100, min=0.95,max=1.05),, pch=19, col=rgb(0,0,1,0.1), cex=0.6)
+
+points(rny * runif(100, min=0.95, max=1.05),rnx*runif(100, min=0.95,max=1.05),, pch=19, col=rgb(1,0,0,0.1), cex=0.6)
+
+
+points(3/5,2/5, col=rgb(0,0,1,0.5), pch=19,cex=2)
+points(2/5,3/5, col=rgb(1,0,0,0.5), pch=19,cex=2)
+
+abline(0,3/2, lty=2)
+abline(0,2/3,lty=3)
+
+abline(1,-1, col="grey", lwd=2)
+abline(3,-1, col="grey", lwd=2, lty=2)
+
+
+text(2.6,2, label="30,20")
+text(1.8,0.9 , label="15,10")
+text(2 +0.35,3, label="20,30")
+text(3/5+0.4,2/5, label="0.6,0.4")
+```
+----
+
+# interpretation
+
+1. note that any variables that are correlated must appear on a line projecting from the origin
+2. linear relationships on this line are perfectly correlated: "compositionally associated", thus \textbf{they have a constant ratio}
+3. We can represent the value on the simplex line as a ratio $\frac{H}{T} = \frac{0.6}{0.4} = 1.5$
+4: This can be made symmetrical by taking the logarithm: $log(\frac{0.6}{0.4}) = \sim{0.41}$ (blue), since $log(\frac{20}{30}) = \sim{-0.41}$ (red)
+5. Addition and subtractions of logarithms are the natural operations on the simplex.
+6. Any simplex is the same as any other: \textbf{cannot normalize out of the simplex}
+
+----
+
+# ~~Familiar measures of correlation~~
+
+- False positive correlations for both -ve and +ve correlation but different reasons
+    - negative correlation bias
+    - more ways of correlating with an intercept than withoutn
+- Slope in Euclidian = intercept in Log-Log
+- Intercept in Euclidan = non-linearity of ratios
+- Constant ratio relationships have a slope of 1 and are linear
+
+```{r, echo=F, fig.width=3.5, fig.height=2}
+# make some random data (uniform for display)
+x.r <- runif(100,1,100)
+y.r <- vector()
+for( i in 1:length(x.r)){y.r[i] <- rnorm(1, mean=x.r[i], sd=6)}
+
+par(mfrow=c(1,2), cex=0.5)
+curve(x*1, 1,100, lwd=3, xlim=c(1,150), ylim=c(1,400), xlab="X", ylab="Y", main="Euclidian", col=rgb(0,0,0,0.3))
+curve(x*4, 1,100, add=T, col=rgb(1,0,0,0.3), lwd=3)
+curve(x*1 + 20, 1,100, add=T, col=rgb(0,0,1,0.3), lwd=3)
+text(1,200, label="y=x", col="black", pos=4)
+text(1,250, label="y=4x", col="red", pos=4)
+text(1,300, label="y=x+20", col="blue", pos=4)
+
+points(x.r, y.r, col=rgb(0,0,0,0.5), pch=19, cex=0.4)
+points(x.r, y.r*4, col=rgb(1,0,0,0.5), pch=19, cex=0.4)
+points(x.r, y.r+20, col=rgb(0,0,1,0.5), pch=19, cex=0.4)
+
+curve(x*1, 1,100, lwd=3, xlim=c(1,150), ylim=c(1,400), xlab="X", ylab="Y", main="Log", log="xy", col=rgb(0,0,0,0.3))
+curve(x*4, 1,100, add=T, col=rgb(1,0,0,0.3), lwd=3)
+curve(x*1 + 20, 1,100, add=T, col=rgb(0,0,1,0.3), lwd=3)
+
+points(x.r, y.r, col=rgb(0,0,0,0.5), pch=19, cex=0.4)
+points(x.r, y.r*4, col=rgb(1,0,0,0.5), pch=19, cex=0.4)
+points(x.r, y.r+20, col=rgb(0,0,1,0.5), pch=19, cex=0.4)
+```
+
+[//]: # ----
+[//]: #
+[//]: #
+[//]: # ### recasting correlation as ratios between parts
+[//]: #
+[//]: # $Var(X) = \langle(X - \mu_x)^2\rangle$
+[//]: #
+[//]: # $Cov(XY) = \langle(X - \mu_x)(Y-\mu_y)\rangle$
+[//]: #
+[//]: # $cor(XY) = \frac{Cov(XY)}{\sqrt{Var(X)Var(Y)}}$
+[//]: #
+[//]: # Note that Spearman's correlation is the same measure on ranks
+[//]: #
+[//]: # This will identify linear relationships, but does not account for slope or intercept
+[//]: #
+[//]: # Now we know we are looking for linear relationships of ratios and how these manifest on linear or logarithmic plots.
+
+----
+
+# Variance of ratios \tiny{Aitchison, 1986}
+
+So if $y=m x$ is constant then $Var(log(\frac{X}{Y})) = 0$ }
+
+This is not a correlation, it is a measure of lack of association. Zero means associated (constant ratio), any other value means a lack of association, but we need to scale the measure.
+
+Problems:
+
+1. the metric must be scaled
+2. the slope must be 1 (in log space), or the intercept must be 0 in Euclidian space
+3. we must have a linear line
+4. we must account for scatter
+
+----
+
+# The $\phi$ metric \tiny{Lovell, 2015}
+
+Transform  by the centered log-ratio: formally equivalent to calculating all pairs of ratios: makes differences between the parts linearly different \tiny{Aitchison 1986}
+
+\normalsize The data are still on the simplex, but not constrained to be in (1,0) to (0,1) for a ratio.
+
+```{r, echo=T}
+Z <- c(1,2,4,8,16,32,64)
+cZ <- log2(Z) - mean(log2(Z))
+```
+\vspace{-0.5cm}
+$cZ = (-3,-2,-1,0,1,2,3)$
+
+$clr(Z) = log\frac{z_i}{gz}; i=1 \ldots D; gz =\mathrm{geometric~mean~of~}Z$
+
+$\phi_{xy} = \frac{Var(clr(x) - clr(y))}{Var(clr(x))} = 0$ if the two variables are associated
+
+geometrically: $\phi_{xy} =  1 + m^2 - 2 m  | r |$
+
+----
+
+# The $\rho$ metric \tiny{Erb,2016}
+
+$\rho_{xy}= \frac{2 cov(clr(x),clr(y))}{Var(clr(x)) + Var(clr(y))}$
+
+geometrically: $\rho_{xy} =  \frac{2r}{m + 1/m}$
+
+no neat geomtric interpretation, but ranges from -1 to +1.
+
+```{r, results="hide", echo=F, message=F, error=F, warnings=F}
+library(ALDEx2)
+library(CoDaSeq)
+library(zCompositions)
+library(igraph)
+library(car)
+library(grDevices)
+source("http://michael.hahsler.net/SMU/ScientificCompR/code/map.R")
+
+data(ak_op)
+data(hmpgenera)
+
+f <- codaSeq.filter(ak_op, min.reads=1000, min.prop=0.005, min.occurrence=0.2, samples.by.row=FALSE)
+f.n0 <- cmultRepl(t(f), method="CZM", label=0)
+f.clr <- codaSeq.clr(f.n0)
+
+conds <- c(rep("A", 15), rep("O", 15))
+
+f.x <- aldex.clr(f, conds, verbose=FALSE)
+f.e <- aldex.effect(f.x, conds, include.sample.summary=TRUE, verbose=FALSE)
+
+x.phi <- codaSeq.phi(f.x)
+
+phi.cutoff <- .2
+x.lo.phi <- subset(x.phi, phi <= phi.cutoff)
+
+#########
+# the 5 most abundant things are:
+# "35898" "38382" "38665" "38765" "39103"
+# so what happens if we remove them
+f.r <- !rownames(f) %in% c("35898","38382","38665","38765","39103")
+f.rare <- f[f.r,]
+
+f.rare.n0 <- cmultRepl(t(f.rare), method="CZM", label=0)
+f.rare.clr <- codaSeq.clr(f.rare.n0)
+
+conds <- c(rep("A", 15), rep("O", 15))
+
+f.rare.x <- aldex.clr(f.rare, conds, verbose=FALSE)
+f.rare.e <- aldex.effect(f.rare.x, conds, include.sample.summary=TRUE, verbose=FALSE)
+
+x.rare.phi <- codaSeq.phi(f.rare.x)
+
+phi.cutoff <- .2
+x.rare.lo.phi <- subset(x.rare.phi, phi <= phi.cutoff)
+
+x.rare.all.phi <- subset(x.rare.phi, phi <= 6)
+
+cor.f <- cor(f.n0, method="spearman")
+cor.rare.f <- cor(f.rare.n0, method="spearman")
+
+
+x.r.phi.11 <- subset(x.rare.phi, col=="11")
+x.phi.11 <- subset(x.phi, col=="11")
+rownames(x.phi.11) <- x.phi.11$row
+
+mn.phi <- expression(paste("E(", phi, ")"))
+mn.Sp <- expression(paste("Spearman"))
+
+
+```
+----
+
+# $\phi$ is more consistent than Spearman's correlation
+
+### Consistency
+
+```{r, echo=F, fig.width=7, fig.height=4, message=F,warnings=F}
+
+
+par(mfrow=c(1,2))
+plot(cor.rare.f["11",], cor.f["11", rownames(cor.f) %in% rownames(cor.rare.f)],
+   pch=19, col=rgb(0,0,0,0.3), cex=0.5, xlab="remove 5", ylab="all features",
+   xlim=c(-0.8,0.8), ylim=c(-0.8,0.8),main=mn.Sp)
+abline(0,1, lty=2, lwd=2, col=rgb(1,0,0,0.3))
+plot(x.r.phi.11$phi, x.phi.11[rownames(x.phi.11) %in% rownames(cor.rare.f), "phi"],
+    pch=19, col=rgb(0,0,0,0.3) , cex=0.5,  xlab="remove 5", ylab="all features", main=mn.phi)
+abline(0,1, lty=2, lwd=2, col=rgb(1,0,0,0.3))
+
+```
+----
+
+# Summary
+- compositional data are any data represented by a constant sum
+- only ratio information is obtained
+- negative correlations are uninterpretable
+- any simplex is always equivalent to the unit simplex
+- "in the absence of any other information or assumptions, correlation of relative abundances is just wrong" (Lovell)
+- We need to calculate two numbers, slope and correlation (Egozcue et al. submitted)
+
+```{r, echo=F, fig.width=3.5, fig.height=2}
+# make some random data (uniform for display)
+x.r <- runif(100,1,100)
+y.r <- vector()
+for( i in 1:length(x.r)){y.r[i] <- rnorm(1, mean=x.r[i], sd=4)}
+
+par(mfrow=c(1,2), cex=0.5)
+curve(x*1, 1,100, lwd=3, xlim=c(1,150), ylim=c(1,400), xlab="X", ylab="Y", main="Euclidian", col=rgb(0,0,0,0.3))
+curve(x*4, 1,100, add=T, col=rgb(1,0,0,0.3), lwd=3)
+curve(x*1 + 20, 1,100, add=T, col=rgb(0,0,1,0.3), lwd=3)
+text(1,200, label="y=x", col="black", pos=4)
+text(1,250, label="y=4x", col="red", pos=4)
+text(1,300, label="y=x+20", col="blue", pos=4)
+
+points(x.r, y.r, col=rgb(0,0,0,0.5), pch=19, cex=0.4)
+points(x.r, y.r*4, col=rgb(1,0,0,0.5), pch=19, cex=0.4)
+points(x.r, y.r+20, col=rgb(0,0,1,0.5), pch=19, cex=0.4)
+
+curve(x*1, 1,100, lwd=3, xlim=c(1,150), ylim=c(1,400), xlab="X", ylab="Y", main="Log", log="xy", col=rgb(0,0,0,0.3))
+curve(x*4, 1,100, add=T, col=rgb(1,0,0,0.3), lwd=3)
+curve(x*1 + 20, 1,100, add=T, col=rgb(0,0,1,0.3), lwd=3)
+
+points(x.r, y.r, col=rgb(0,0,0,0.5), pch=19, cex=0.4)
+points(x.r, y.r*4, col=rgb(1,0,0,0.5), pch=19, cex=0.4)
+points(x.r, y.r+20, col=rgb(0,0,1,0.5), pch=19, cex=0.4)
+```
+
+----
+
+### Further Readings and Sources
+- Pearson K. 1897. Mathematical contributions to the theory of evolution. -- on a form of spurious correlation which may arise when indices are used in the measurement of organs. Proceedings of the Royal Society of London: 60:489
+- Aitchison J. 1986. The Statistical Analysis of Compositional Data. Chapman and Hall
+- Lovell D. 2015. Proportionality: a valid alternative to correlation for relative data. PLoS Comp Bio. 11:e1004075
+- Pawlowsky-Glahn V. 2015. Modeling and Analysis of Compositional Data. John Wiley & Sons
+- Erb I. 2016. How should we measure proportionality on relative gene expression data?  Theory in Biosci. 135:21
+- Egozcue JJ, Pawlowsky-Glahn V, Gloor G. submitted. Linear Association In Compositional Data Analysis
