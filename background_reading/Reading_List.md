@@ -14,6 +14,7 @@ Journal of Computational and Graphical Statistics, in press (http://dx.doi.org/1
 (A new way to visualize high-dimensional data as an effect plot)
 
 Colquhoun, D. An investigation of the fales discovery rate and the misinterpretation of p-values. (2014) R. Soc. Open Sci. 1:140216 doi: 10.1098/rsos.140216
+
 ##Functional guides:
 
 Van den Boogaart, K Gerald and Tolosana-Delgado, Raimon. Analyzing compositional data with R (2013)
@@ -21,6 +22,10 @@ Van den Boogaart, K Gerald and Tolosana-Delgado, Raimon. Analyzing compositional
 Aitchison, John and Greenacre, Michael. Biplots of compositional data (2002). Journal of the Royal Statistical Society: Series C, 51:375
 
 ##Recent papers:
+
+Gloor, Gregory B. and Macklaim, Jean M. and Pawlowsky-Glahn, Vera and Egozcue, Juan J. Microbiome Datasets Are Compositional: And This Is Not Optional. 2017. Frontiers in Microbiology 8:2224 (The supplement contains worked examples)
+
+Bian, Gaorui and Gloor, Gregory B et.al. The Gut Microbiota of Healthy Aged Chinese Is Similar to That of the Healthy Young 2017. mSphere 2:e00327-17 (an example on a very large dataset. Includes supplement of all code)
 
 Gloor, Gregory B and Wu, Jia Rong and Pawlowsky-Glahn, Vera and Egozcue, Juan José
 It's all relative: analyzing microbiome data as compositions (2016)
