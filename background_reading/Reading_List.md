@@ -13,6 +13,7 @@ Displaying Variation in Large Datasets: a Visual Summary of Effect Sizes (2016)
 Journal of Computational and Graphical Statistics, in press (http://dx.doi.org/10.1080/10618600.2015.1131161)
 (A new way to visualize high-dimensional data as an effect plot)
 
+Colquhoun, D. An investigation of the fales discovery rate and the misinterpretation of p-values. (2014) R. Soc. Open Sci. 1:140216 doi: 10.1098/rsos.140216
 ##Functional guides:
 
 Van den Boogaart, K Gerald and Tolosana-Delgado, Raimon. Analyzing compositional data with R (2013)
