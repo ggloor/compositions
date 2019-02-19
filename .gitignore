@@ -23,3 +23,6 @@ background_reading/cjm-2015-0821_proof.pdf
 
 presentations/data_ignored/
 
+*.graffle
+*.graffle
+presentations/TLA.pdf
