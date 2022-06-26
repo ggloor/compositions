@@ -4,7 +4,7 @@
 
 Aitchison, J. The Statistical Analysis of Compositional Data (1986)
 
-Aitchison, J. A Concise Guide to Compositional Data Analysis. http://ima.udg.edu/Activitats/CoDaWork05/A\_concise\_guide\_to\_compositional\_data\_analysis.pdf
+Aitchison, J. A Concise Guide to Compositional Data Analysis. http://ima.udg.edu/Activitats/CoDaWork05/A_concise_guide_to_compositional_data_analysis.pdf
 
 Pawlowsky-Glahn, Vera and Egozcue, Juan José and Tolosana-Delgado, Raimon. Modeling and Analysis of Compositional Data (2015)
 
